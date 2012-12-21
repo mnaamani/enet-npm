@@ -1,0 +1,46 @@
+var enet=require("../lib/enet.js");
+
+enet.init(false);
+
+var server;
+
+var _handlers = {
+    connect: function(peer,data){
+        console.log("client connected: data="+data);
+    },
+    disconnect: function(peer,data){
+        console.log("client disconnected: data="+data);
+    },
+    message: function(peer,packet,channel,data){
+        if(typeof alert !== 'undefined') alert("Msg:"+packet.data().toString()+"\nData:"+data+"\nChannel:"+channel);
+        console.log('packet data:'+packet.data().toString()+"channel:"+channel+"data="+data);
+        peer.send(channel, new enet.Packet(packet.data(),1));
+    },
+    telex: function(msg,rinfo){        
+        console.log("telex:"+msg.toString());
+        console.log("from:"+rinfo.address);
+    }    
+};
+
+server = createHost("0.0.0.0",5000,5,_handlers,function(host){
+    console.log("_");
+},2000);
+
+function createHost(ip,port,channels,handlers,tick,interval){    
+    var addr = new enet.Address(ip,port);
+    var host = new enet.Host(addr,channels);
+    
+    host.on("connect",handlers.connect);
+    host.on("disconnect",handlers.disconnect);
+    host.on("message",handlers.message);
+    host.on("telex",handlers.telex);
+    
+    if(tick && interval){
+        setInterval(function(){
+            tick(host);
+        },interval);
+    }   
+    return host;
+}
+
+server.start();
