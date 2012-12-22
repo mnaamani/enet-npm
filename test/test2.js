@@ -1,23 +1,20 @@
 var enet=require("../lib/enet.js");
 
+//init enet with a packet filter.. 
 enet.init(function(){
+    //return 0 //to drop the packet
+    //return 1 //to allow the packet through
     return 1;
 });
 
 var addr1 = new enet.Address("0.0.0.0",5000);
 var server = new enet.Host(addr1,32);
 
-server.on("telex",function(buff, rinfo){
-	console.log("telex from:",rinfo.address+":"+rinfo.port,buff.toString());
-	server.send(ip,port, buff);//echo back the telex	
-});
-
 server.on("connect",function(peer,data){
 	console.log("peer connected. data=",data);
 	console.log("peer address:",peer.address().address()+":"+peer.address().port());
 	var packet = new enet.Packet("Bye Bye",1);
 	peer.send(1,packet);
-	//peer.ping();	
 	peer.disconnectLater();
 });
 

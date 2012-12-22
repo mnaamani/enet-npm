@@ -1,7 +1,5 @@
 var enet=require("../lib/enet.js");
 
-enet.init();
-
 var _peer, server, client;
 
 var _handlers = {
@@ -14,7 +12,8 @@ var _handlers = {
     },
     message: function(peer,packet,channel,data){
     	console.log('packet data:',packet.data().toString(), "channel:",channel,"data=",data);
-	peer.send(channel, new enet.Packet(packet.data(),1));
+        //echo back the packet
+    	//peer.send(channel, new enet.Packet(packet.data(),1));
     },
     telex: function(msg,rinfo){
         console.log("telex:",msg.toString());   
@@ -27,25 +26,24 @@ server = createHost("0.0.0.0",5000,5,_handlers,function(host){
         try{
     	 var packet=new enet.Packet( (counter++).toString(), enet.Packet.FLAG_RELIABLE);
     	 _peer.send(3,packet);
-        //_peer.disconnectLater();
     	}catch(e){
     	    console.log(e);
     	}
     }
-},500);
+},1000);
 
 client = createHost("0.0.0.0",5001,5,_handlers,function(host){
 
-/*
+
     var buf = new Buffer(JSON.stringify({
         '+end':'123213...',
         '_to':'172.16.200.1:42424'
     }), "utf8");
 
-    host.send("192.168.1.234", 5001, buf);
-*/
+    host.send("127.0.0.1", 5001, buf);
+
     
-},500);
+},1000);
 
 function createHost(ip,port,channels,handlers,tick,interval){    
     var addr = new enet.Address(ip,port);

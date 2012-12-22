@@ -1,19 +1,19 @@
 var enet=require("../lib/enet.js");
 
-enet.init(false);
+var listen_port = process.argv[2] || 5000;
 
 var server;
 
 var _handlers = {
     connect: function(peer,data){
-        console.log("client connected: data="+data);
+        console.log("client connected. data: "+data);
     },
     disconnect: function(peer,data){
-        console.log("client disconnected: data="+data);
+        console.log("client disconnected. data: "+data);
     },
     message: function(peer,packet,channel,data){
         if(typeof alert !== 'undefined') alert("Msg:"+packet.data().toString()+"\nData:"+data+"\nChannel:"+channel);
-        console.log('packet data:'+packet.data().toString()+"channel:"+channel+"data="+data);
+        console.log('packet data: '+packet.data().toString()+" channel: "+channel+" data: "+data);
         peer.send(channel, new enet.Packet(packet.data(),1));
     },
     telex: function(msg,rinfo){        
@@ -22,9 +22,9 @@ var _handlers = {
     }    
 };
 
-server = createHost("0.0.0.0",5000,5,_handlers,function(host){
+server = createHost("0.0.0.0",listen_port,5,_handlers,function(host){
     console.log("_");
-},2000);
+},3000);
 
 function createHost(ip,port,channels,handlers,tick,interval){    
     var addr = new enet.Address(ip,port);
