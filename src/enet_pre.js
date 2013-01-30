@@ -80,6 +80,8 @@ Module['preRun'].push(function(){
     	_gethostbyname = _gehostbyname_r = function(){ return 0; }
         _fcntl=function(){return -1;}
         _ioctl=function(){return -1;}
+        _ntohs = _htons;
+        _ntohl = _htonl;
         //enet API functions from unix.c
         _enet_socket_create =function(){
             //console.log("enet_socket_create()",arguments);
