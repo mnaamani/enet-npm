@@ -1,3 +1,5 @@
+var Buffer = require("buffer").Buffer;
+
 var udp_sockets_count=0;
 var udp_sockets = {};
 
@@ -45,7 +47,7 @@ function BufferConcat( buffers ){
     var i = 0;
     buffers.forEach(function(B){
         for(var b=0; b<B.length;b++){
-            buf[i]=B[b];
+            buf.writeUInt8(B.readUInt8(b),i);
             i++;
         }
     });
@@ -138,7 +140,7 @@ Module['preRun'].push(function(){
           //Copy Node Buffer packet.data into HEAP8[($data)|0],HEAP8[($data+1)|0]
           //MAX_MTU?
           for(var i=0;i<packet.dataLength;i++){
-            HEAPU8[($data+i)|0]=packet.data[i];
+            HEAPU8[($data+i)|0]=packet.data.readUInt8(i);
           }
 
           HEAP16[(($sin)>>1)]=1;
@@ -164,7 +166,7 @@ Module['preRun'].push(function(){
 
               //Copy HEAP into node Buffer
               for(var i=0;i<chunkLength;i++){
-                chunk[i] = HEAP8[($data+i)|0];
+                chunk.writeInt8(HEAP8[($data+i)|0],i);
               }
               chunks.push(chunk);
            }
