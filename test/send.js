@@ -5,7 +5,11 @@ var send_to_port = process.argv[3] || 5000;
 
 var client = new enet.Host( new enet.Address("0.0.0.0",0),32);
 
-var peer = client.connect(new enet.Address( send_to_ip, send_to_port),5,40000);
+var peer;
+
+client.on("ready",function(){
+    peer = client.connect(new enet.Address( send_to_ip, send_to_port),5,40000);
+});
 
 client.on("disconnect",function(){
 	console.log("disconnected.");
