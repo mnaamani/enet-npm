@@ -62,6 +62,7 @@ if(!events){
 ENetHost.prototype.__service = cwrap('enet_host_service','number',['number','number','number']);
 ENetHost.prototype.service = function(){
    var self = this;
+   if(!self._pointer || !self._event) return;
   try{
 	if(!self._socket_bound){
                 //keep checking until the port is non 0
@@ -123,6 +124,8 @@ ENetHost.prototype.destroy = function(){
    self.stop();
    self._event.free();
    ccall("enet_host_destroy",'',['number'],[this._pointer]);
+   delete self._pointer;
+   delete self._event;
 };
 ENetHost.prototype.receivedAddress = function(){
 	var ptr = ccall("jsapi_host_get_receivedAddress",'number',['number'],[this._pointer]);
