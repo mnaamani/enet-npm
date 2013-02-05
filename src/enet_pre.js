@@ -41,8 +41,11 @@ function ip2long(ip) {
 function BufferConcat( buffers ){
     var totalLength = 0;
     buffers.forEach(function(B){
+        if(!B || !B.length) return;
         totalLength = totalLength + B.length;
-    });    
+    });
+    if(!totalLength) return [];
+
     var buf = new Buffer(totalLength);
     var i = 0;
     buffers.forEach(function(B){
@@ -78,7 +81,6 @@ var Module = {};
 Module["preRun"]=[];
 
 Module['preRun'].push(function(){
-
     	_gethostbyname = _gehostbyname_r = function(){ return 0; }
         _fcntl=function(){return -1;}
         _ioctl=function(){return -1;}
@@ -86,7 +88,6 @@ Module['preRun'].push(function(){
         _ntohl = _htonl;
         //enet API functions from unix.c
         _enet_socket_create =function(){
-            //console.log("enet_socket_create()",arguments);
             var sfd;
             try{
                 udp_sockets_count++;
@@ -103,27 +104,39 @@ Module['preRun'].push(function(){
         };
         
         _enet_socket_bind = function($socket,$address){
-          var $host;
-          var $port;
-          $host = HEAPU32[(($address)>>2)];
-          $port = HEAP16[(($address+4)>>1)];
-
+          var $host=0;
+          var $port=0;
+          if($address){
+              $host = HEAPU32[(($address)>>2)];
+              $port = HEAP16[(($address+4)>>1)];
+          }
           if(udp_sockets[$socket]){
-              console.error("binding to port",$port);
-              udp_sockets[$socket].bind($port,long2ip($host,'_enet_socket_bind'));
+              console.error("binding to",long2ip($host),$port);
+              udp_sockets[$socket].bind($port,long2ip($host));
               return 0;
           }
           return -1;//todo: set error number
         };
         
         _enet_socket_listen = function($socket, $backlog){
-          //console.error("enet_socket_listen()",arguments);
         };        
         _enet_socket_set_option = function(){
-            //console.log("enet_socket_set_option()",arguments);
             return 0;
         };
-        
+
+        function get_sockaddr_in($sin){
+            return ({
+                "family": HEAP32[($sin+0)>>1],
+                "port":   HEAP16[($sin+4)>>1],
+                "addr":   HEAP32[($sin+8)>>2]
+            });
+        }
+        function set_sockaddr_in($sin,family,port,address){
+              HEAP32[($sin+0)>>1] = family;
+              HEAP16[($sin+4)>>1] = port;
+              HEAP32[($sin+8)>>2] = address;
+        }
+
         _recvmsg = function($sockfd, $msgHdr, $flags) {
           var udpsocket = udp_sockets[$sockfd];
           if(!udpsocket) return -1;
@@ -142,11 +155,7 @@ Module['preRun'].push(function(){
           for(var i=0;i<packet.dataLength;i++){
             HEAPU8[($data+i)|0]=packet.data.readUInt8(i);
           }
-
-          HEAP16[(($sin)>>1)]=1;
-          HEAPU32[(($sin+4)>>2)]=ip2long(packet.ip);
-          HEAP16[(($sin+2)>>1)]=_htons(packet.port);
-
+          set_sockaddr_in($sin,1,_htons(packet.port),ip2long(packet.ip));
           return packet.dataLength;//truncation??
         };
         
@@ -158,23 +167,26 @@ Module['preRun'].push(function(){
           var chunkLength;
           var $sin=HEAP32[(($msgHdr)>>2)];
           var $buffers=HEAP32[(($msgHdr+8)>>2)];
+          var $bufferCount=HEAPU32[($msgHdr+12)>>2];
+          var packet = {};
+          var addr = get_sockaddr_in($sin);
 
-          for( var $x=0; $x <  HEAPU32[($msgHdr+12)>>2] ; $x++ ){
+          for( var $x=0; $x < $bufferCount ; $x++ ){
               chunkLength = HEAP32[(($buffers+($x<<3)+4)>>2)];
               chunk = new Buffer(chunkLength);
               $data=HEAP32[($buffers+($x<<3))>>2]
-
+              if(!chunkLength) continue;
               //Copy HEAP into node Buffer
               for(var i=0;i<chunkLength;i++){
-                chunk.writeInt8(HEAP8[($data+i)|0],i);
+                chunk.writeUInt8(HEAPU8[($data+i)|0],i);
               }
               chunks.push(chunk);
            }
 
-              HEAP16[(($sin)>>1)]=1;
-              var packet = {};
-              packet.ip = long2ip(HEAPU32[(($sin+4)>>2)],'_sendmsg');
-              packet.port=_ntohs(HEAP16[(($sin+2)>>1)]);
+              //HEAP16[(($sin)>>1)]  //AF_INET == 1
+              packet.ip = long2ip(addr.addr);
+              packet.port=_ntohs(addr.port);
+
               packet.data = BufferConcat(chunks);
               packet.dataLength = packet.data.length;
               udpsocket.send(packet.data,0,packet.data.length,packet.port,packet.ip,function(){
