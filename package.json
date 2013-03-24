@@ -1,6 +1,6 @@
 {
     "name":     "enet",
-    "version":  "v0.0.1",
+    "version":  "v0.0.2",
     "main": "index.js",
     "description": "The ENet Networking Library cross compiled to javascript",
     "keywords" : ["enet","protocol","udp","network"],
