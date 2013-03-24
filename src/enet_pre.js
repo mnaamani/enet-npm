@@ -108,10 +108,10 @@ Module['preRun'].push(function(){
           var $port=0;
           if($address){
               $host = HEAPU32[(($address)>>2)];
-              $port = HEAP16[(($address+4)>>1)];
+              $port = HEAPU16[(($address+4)>>1)];
           }
           if(udp_sockets[$socket]){
-              console.error("binding to",long2ip($host),$port);
+              //console.error("binding to",long2ip($host),$port);
               udp_sockets[$socket].bind($port,long2ip($host));
               return 0;
           }
@@ -127,7 +127,7 @@ Module['preRun'].push(function(){
         function get_sockaddr_in($sin){
             return ({
                 "family": HEAP32[($sin+0)>>1],
-                "port":   HEAP16[($sin+4)>>1],
+                "port":   HEAPU16[($sin+4)>>1],
                 "addr":   HEAPU32[($sin+8)>>2]
             });
         }

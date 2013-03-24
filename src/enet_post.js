@@ -114,7 +114,7 @@ ENetHost.prototype.service = function(){
 	err = self.__service(self._pointer,self._event._pointer,0);
    }
   }catch(e){
-   console.log(e);
+   //console.log(e);
    if(err < 0) console.error("error servicing host: ",err);
   }
 };
