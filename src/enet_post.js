@@ -68,7 +68,7 @@ ENetHost.prototype.service = function(){
                 //keep checking until the port is non 0
                 if(self.address().port()!=0){
                     self._socket_bound=true;
-                    self.emit('ready');
+                    self.emit('ready',self.address().address(),self.address().port());
                 }
          }
 
@@ -275,7 +275,7 @@ ENetAddress.prototype.address = function(){
 }
 
 function ENetPeer(pointer){
-  if(pointer) this._pointer = pointer; else throw("improper use of ENetPeer");
+  if(pointer) this._pointer = pointer; else throw("ENetPeer null pointer");
 };
 ENetPeer.prototype.send = function(channel,packet){
 	var ret = ccall('enet_peer_send','number',['number','number','number'],[this._pointer,channel,packet._pointer]);
