@@ -52,9 +52,9 @@ Setup some event listeners,
       console.log("received packet contents:",packet.data());
     });
     
-Start polling the host for events at 30ms intervals,
+Start polling the host for events at 50ms intervals, (default is 30ms if not specified)
 
-    server.start();
+    server.start(50);
 
 When done with a host, the host may be destroyed with the destroy() method.
 All connected peers to the host will be reset, and the resources used by the host will be freed.

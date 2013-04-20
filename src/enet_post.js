@@ -147,12 +147,12 @@ ENetHost.prototype.connect = function(address,channelCount,data){
 
 	return new ENetPeer(ptr);
 };
-ENetHost.prototype.start_watcher = function(){
+ENetHost.prototype.start_watcher = function( ms_interval ){
    if(this._io_loop) return;
    var self=this;
    self._io_loop = setInterval(function(){
 	self.service();
-   },ENET_HOST_SERVICE_INTERVAL);
+   },ms_interval || ENET_HOST_SERVICE_INTERVAL);
 };
 ENetHost.prototype.stop_watcher = function(){
   if(this._io_loop){
