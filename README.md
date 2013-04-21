@@ -1,19 +1,19 @@
-ENet Networking Library cross compiled to javascript
-========
-*http://enet.bespin.org/*
-*http://enet.bespin.org/Tutorial.html*
+# [ENet](http://enet.bespin.org/) Networking Library cross compiled to javascript
 
 ## Installation
 
     npm install enet
 
+
 ## Quick Tutorial
+
+The Tutorial tries to parallel the [native C library tutorial](http://enet.bespin.org/Tutorial.html)
 
 ### Initialisation
 
     var enet = require("enet");
 
-optionally initialise enet with a packet-filter function,
+optionally initialise enet with a packet-filtering function,
 
     enet.init(filter);
     
@@ -32,9 +32,9 @@ Specify address and port to listen on,
     var addr = new enet.Address("0.0.0.0", /* ANY ADDRESS */
                                  7777      /* UDP Port 7777 */);
     
-Create the host,
+Create the server (ENetHost),
 
-    var server = new enet.Host(addr,   /* the enet.Address to bind the server host to */, 
+    var server = enet.createServer(addr,   /* the enet.Address to bind the server host to */, 
                              32      /* allow up to 32 clients and/or outgoing connections */,
                               2      /* allow up to 2 channels to be used, 0 and 1 */,
                               0      /* assume any amount of incoming bandwidth */,
@@ -99,20 +99,14 @@ source is an object with *address* and *port* properties (source of udp packet)
 
 ### Creating an ENet client
 
-Specify any address and random port to listen on,
-
-    var addr = new enet.Address("0.0.0.0", /* ANY ADDRESS */
-                                 0      /* random client UDP Port */);
-    
 Create the host,
 
-    var client = new enet.Host(addr, /*the enet.Address to bind the client host to*/ 
-                              1 /* only allow 1 outgoing connection */,
-                              2 /* allow up to 2 channels to be used, 0 and 1 */,
-                              57600 / 8 /* 56K modem with 56 Kbps downstream bandwidth */,
-                              14400 / 8 /* 56K modem with 14 Kbps upstream bandwidth */);
+    var client = enet.createClient( 1 /* only allow 1 outgoing connection */,
+                                    2 /* allow up to 2 channels to be used, 0 and 1 */,
+                                    57600 / 8 /* 56K modem with 56 Kbps downstream bandwidth */,
+                                    14400 / 8 /* 56K modem with 14 Kbps upstream bandwidth */);
                               
-    //setup client event listeners (see creating enet server above)
+    //setup event listeners (see creating enet server above)
     
     client.start();
     
@@ -123,9 +117,18 @@ Create the host,
     var peer = client.connect(server_addr,
                    2, /* channels */
                    1337 /*data to send, (received in 'connect' event at server) */);
-                   
+
+    client.on("connect",function(peer,data){
+        //connected to peer
+        peer.ping();
+    });
+
+    client.on("disconnect",function(peer,data){
+      //will occur on timeout trying to connect to server/peer or when remote server/peer disconnects/timesout
+    });
+
+    //special case - if two enet hosts simulaneously initiate connections to  each other 'connect' event will trigger twice.
     client.on("connect",function(P,data){
-       //if peer simulaneously initiates a connection to us the 'connect' event will trigger twice.
        if(peer._pointer === P._pointer){
           //data will always be 0 - trigger when we initiate a connection
        }else{
@@ -133,15 +136,11 @@ Create the host,
        }
     });
 
-    client.on("disconnect",function(peer,data){
-      //will occur on timeout trying to connect to server/peer or when remote server/peer disconnects/timesout
-    });
     
 ### Sending a packet to an ENet peer
     var packet = new enet.Packet( new Buffer("hello, world"),enet.FLAG_RELIABLE);
     
-    peer.send(0, //channel
-              packet);
+    peer.send(0 /*channel*/, packet);
 
 
 ### Disconnecting an ENet peer

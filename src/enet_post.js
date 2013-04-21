@@ -22,7 +22,20 @@ module.exports.inet_long2ip=long2ip;
 
 if(events && util ) util.inherits(ENetHost, events.EventEmitter);
 
-function ENetHost(address,maxchannels,maxpeers){
+module.exports.createServer = function(P){
+    if(P) return new ENetHost(P.address,P.peers,P.channels,P.down,P.up,"server");
+}
+module.exports.createClient = function(P){
+    var client;
+    if(P){
+        client = new ENetHost(undefined,P.peers,P.channels,P.down,P.up,"client");
+    }else{
+        client = new ENetHost(undefined,32,5,0,0,"client");
+    }
+    return client;
+}
+
+function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    if(events){
       events.EventEmitter.call(this);
    }else{
@@ -30,15 +43,30 @@ function ENetHost(address,maxchannels,maxpeers){
    }
 
    var self = this;
-   var pointer = ccall('jsapi_enet_host_create', 'number', 
+   var pointer = 0;
+   if(host_type==='client'){
+     pointer = ccall('jsapi_enet_host_create_client', 'number', 
+			['number','number','number','number'],
+			[maxpeers || 128, maxchannels || 5, bw_down || 0, bw_up || 0]);     
+
+   }else{ //default is a server
+     pointer = ccall('jsapi_enet_host_create', 'number', 
 			['number','number','number','number','number','number'],
-			[address.host(), address.port(),maxpeers || 128, maxchannels || 5, 0, 0]);
+			[address.host(), address.port(),maxpeers || 128, maxchannels || 5, bw_down || 0, bw_up || 0]);     
+   }
+
    if(pointer==0){
 	throw('failed to create ENet host');
    }
-   self._event = new ENetEvent();//allocate memory for - free it when we destroy the host
+   self._event = new ENetEvent();//allocate memory for events - free it when we destroy the host
    self._pointer = pointer;
    self._socket_bound = false;
+   var socketfd = ccall('jsapi_host_get_socket',"number",['number'],[self._pointer]);
+   var socket = udp_sockets[socketfd]
+   socket.on("listening",function(){
+    socket.setBroadcast(true);
+    self.emit('ready',socket.address().address,socket.address().port);
+   });
 }
 
 if(!events){
@@ -64,6 +92,9 @@ ENetHost.prototype.service = function(){
    var self = this;
    if(!self._pointer || !self._event) return;
   try{
+
+/*  if we didn't yet bind() the socket we get an exception corresponding to a
+    a EINVAL error from  getsockname() syscall when calling .address() 
 	if(!self._socket_bound){
                 //keep checking until the port is non 0
                 if(self.address().port()!=0){
@@ -71,7 +102,7 @@ ENetHost.prototype.service = function(){
                     self.emit('ready',self.address().address(),self.address().port());
                 }
          }
-
+*/
    var err = self.__service(self._pointer,self._event._pointer,0);
    while( err > 0){
 	switch(self._event.type()){

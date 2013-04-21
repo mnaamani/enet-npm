@@ -1073,6 +1073,7 @@ enet_protocol_handle_incoming_commands (ENetHost * host, ENetEvent * event)
           break;
 
        case ENET_PROTOCOL_COMMAND_CONNECT:
+          if( host -> isClient) goto commandError;//client host doesn't accept incoming connections!
           peer = enet_protocol_handle_connect (host, header, command);
           if (peer == NULL)
             goto commandError;

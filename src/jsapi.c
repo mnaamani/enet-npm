@@ -19,16 +19,26 @@ void jsapi_init(int filter){
   enet_initialize();
 }
 
-ENetHost* jsapi_enet_host_create(unsigned int host, int port,int maxpeers, int maxchannels, int bw_in, int bw_out){
+ENetHost* jsapi_enet_host_create(unsigned int host, int port,int maxpeers, int maxchannels, int bw_down, int bw_up){
     ENetAddress address;
     address.host = host;
     address.port = port;
 
     return enet_host_create (& address     /* the address to bind the server host to */,
-                               maxpeers    /* allow up to 32 clients and/or outgoing connections */,
-                               maxchannels /* allow up to 5 channels to be used, 0 and 1 */,
-                               bw_in    /* assume any amount of incoming bandwidth */,
-                               bw_out   /* assume any amount of outgoing bandwidth */);
+                               maxpeers    /* allow up to maxpeers clients and/or outgoing connections */,
+                               maxchannels /* allow up to maxchannels channels to be used, 0,1,...maxcahnnels*/,
+                               bw_down    /* assume bw_in (Bytes/s) of incoming bandwidth */,
+                               bw_up   /* assume bw_out (Bytes/s) of outgoing bandwidth */);
+}
+
+ENetHost* jsapi_enet_host_create_client(int maxconn, int maxchannels, int bw_down, int bw_up){
+    ENetHost* host = enet_host_create (NULL      /*create a client - doesn't accept incoming connections*/,
+                               maxconn    /* allow up to maxconn outgoing connections */,
+                               maxchannels /* allow up to maxchannels channels to be used, 0 and 1 */,
+                               bw_down    /* assume bw_down (Bytes/s) incoming bandwidth */,
+                               bw_up   /* assume bw_up (Bytes/s) outgoing bandwidth */);
+    host -> isClient = 1;
+    return host;
 }
 
 ENetPeer* jsapi_enet_host_connect(ENetHost* host, unsigned int destinationHost, int port, int channelCount, int data){

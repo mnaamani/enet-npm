@@ -9,6 +9,7 @@ EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
     '_jsapi_host_get_socket', \
     '_jsapi_host_get_socket', \
     '_jsapi_enet_host_create', \
+    '_jsapi_enet_host_create_client', \
     '_jsapi_enet_host_connect', \
     '_enet_packet_create', \
     '_enet_packet_destroy', \

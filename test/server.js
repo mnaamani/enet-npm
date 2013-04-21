@@ -1,0 +1,26 @@
+var enet = require("enet");
+
+var server = enet.createServer({
+    address: new enet.Address("0.0.0.0",6666),
+    peers:32,
+    channels:1,
+    down:0,
+    up:0
+});
+
+server.on("ready",function(ip,port){
+    console.log("server bound to:",ip,":",port);
+});
+
+server.on("connect",function(peer,data){
+    console.log("peer connected");
+    var packet = new enet.Packet( new Buffer("hello, im the server"),enet.FLAG_RELIABLE);
+    peer.send(0,packet);
+});
+
+server.on("message",function(peer,packet,chan){
+  console.log("got message:",packet.data().toString());
+  peer.disconnectLater();
+});
+
+server.start(20);

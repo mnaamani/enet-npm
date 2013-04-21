@@ -102,6 +102,7 @@ enet_host_create (const ENetAddress * address, size_t peerCount, size_t channelL
     host -> compressor.compress = NULL;
     host -> compressor.decompress = NULL;
     host -> compressor.destroy = NULL;
+    host -> isClient = 0;
 
     enet_list_clear (& host -> dispatchQueue);
 
