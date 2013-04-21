@@ -34,11 +34,13 @@ Specify address and port to listen on,
     
 Create the server (ENetHost),
 
-    var server = enet.createServer(addr,   /* the enet.Address to bind the server host to */, 
-                             32      /* allow up to 32 clients and/or outgoing connections */,
-                              2      /* allow up to 2 channels to be used, 0 and 1 */,
-                              0      /* assume any amount of incoming bandwidth */,
-                              0      /* assume any amount of outgoing bandwidth */);
+    var server = enet.createServer({
+        address: addr, /* the enet.Address to bind the server host to */
+        peers:32, /* allow up to 32 clients and/or outgoing connections */
+        channels:2, /* allow up to 2 channels to be used, 0 and 1 */
+        down:0, /* assume any amount of incoming bandwidth */
+        up:0 /* assume any amount of outgoing bandwidth */
+    });
                               
 An exception will be thrown if an error occured creating the host.
 
@@ -101,10 +103,12 @@ source is an object with *address* and *port* properties (source of udp packet)
 
 Create the host,
 
-    var client = enet.createClient( 1 /* only allow 1 outgoing connection */,
-                                    2 /* allow up to 2 channels to be used, 0 and 1 */,
-                                    57600 / 8 /* 56K modem with 56 Kbps downstream bandwidth */,
-                                    14400 / 8 /* 56K modem with 14 Kbps upstream bandwidth */);
+    var client = enet.createClient({
+        peers: 1, /* only allow 1 outgoing connection */
+        channels: 2, /* allow up to 2 channels to be used, 0 and 1 */
+        down: 57600 / 8, /* 56K modem with 56 Kbps downstream bandwidth */
+        up: 14400 / 8 /* 56K modem with 14 Kbps upstream bandwidth */
+    });
                               
     //setup event listeners (see creating enet server above)
     
