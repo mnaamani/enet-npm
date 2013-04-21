@@ -8,7 +8,6 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
-#include <net/netinet/in.h>  //added for emscripten
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>

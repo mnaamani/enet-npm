@@ -107,7 +107,10 @@ typedef enum _ENetPacketFlag
    ENET_PACKET_FLAG_NO_ALLOCATE = (1 << 2),
    /** packet will be fragmented using unreliable (instead of reliable) sends
      * if it exceeds the MTU */
-   ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT = (1 << 3)
+   ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT = (1 << 3),
+   /** whether the packet has been sent from all queues it has been entered into */
+   ENET_PACKET_FLAG_SENT = (1<<8)
+
 } ENetPacketFlag;
 
 struct _ENetPacket;
@@ -139,6 +142,7 @@ typedef struct _ENetPacket
    enet_uint8 *             data;            /**< allocated data for packet */
    size_t                   dataLength;      /**< length of data */
    ENetPacketFreeCallback   freeCallback;    /**< function to be called when the packet is no longer in use */
+   void *                   userData;        /**< application private data, may be freely modified */
 } ENetPacket;
 
 typedef struct _ENetAcknowledgement

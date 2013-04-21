@@ -136,6 +136,9 @@ enet_host_destroy (ENetHost * host)
 {
     ENetPeer * currentPeer;
 
+    if (host == NULL)
+      return;
+
     enet_socket_destroy (host -> socket);
 
     for (currentPeer = host -> peers;
