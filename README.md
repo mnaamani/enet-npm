@@ -141,7 +141,7 @@ Create the host,
 
     
 ### Sending a packet to an ENet peer
-    var packet = new enet.Packet( new Buffer("hello, world"),enet.FLAG_RELIABLE);
+    var packet = new enet.Packet( new Buffer("hello, world"),enet.Packet.FLAG_RELIABLE);
     
     peer.send(0 /*channel*/, packet);
 
