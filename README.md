@@ -17,9 +17,8 @@ optionally initialise enet with a packet-filtering function,
 
     enet.init(filter);
     
-    function filter(host /*enet.Host*/){
-      var from = host.receivedAddress();      
-      if(from.address()=='192.168.0.22'){
+    function filter(ipaddress /*String*/, port /*Number*/){
+      if(ipaddress === '192.168.0.22'){
         return 0; //value of 0 will drop the packet
       }
       return 1; //value of 1 will pass the packet

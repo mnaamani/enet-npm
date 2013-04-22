@@ -44,6 +44,15 @@ function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
 
    var self = this;
    var pointer = 0;
+
+   //ENetHost from _pointer
+   if(arguments.length === 1 && (typeof address === 'number') ){
+      pointer = address;
+      self._pointer = pointer;
+      self._event =  new ENetEvent();
+      return self;
+   }
+
    if(host_type==='client'){
      pointer = ccall('jsapi_enet_host_create_client', 'number', 
 			['number','number','number','number'],
@@ -336,8 +345,9 @@ ENetPeer.prototype.address = function(){
 };
 
 function __packet_filter (host_ptr){
-   var ip,port,data;
-   return global_packet_filter(ip,port,data);
+   var host = new ENetHost(host_ptr);
+   var addr = host.receivedAddress();
+   return global_packet_filter(addr.address(),addr.port());
 }
 
 /*

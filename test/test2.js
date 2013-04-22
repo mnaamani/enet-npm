@@ -1,9 +1,10 @@
 var enet=require("../lib/enet.js");
 
 //init enet with a packet filter.. 
-enet.init(function(){
+enet.init(function(ip,port){
     //return 0 //to drop the packet
     //return 1 //to allow the packet through
+    console.error("packet source:",ip,port);
     return 1;
 });
 
