@@ -1,10 +1,14 @@
 var events, util, Queue, DGRAM;
-var ENET_HOST_SERVICE_INTERVAL = 30;//milli-seconds
 var global_packet_filter;
+var Stream;
+
+var ENET_HOST_SERVICE_INTERVAL = 30;//milli-seconds
+var ENET_PACKET_FLAG_RELIABLE = 1;
 
 events = require("events");
 util = require("util");
 DGRAM = require("dgram");
+Stream = require("stream");
 
 module.exports.init = function( pf_func){
     if(pf_func){
@@ -14,6 +18,7 @@ module.exports.init = function( pf_func){
         _jsapi_init(0);
     }
 };
+
 module.exports.Host = ENetHost;
 module.exports.Address = ENetAddress;
 module.exports.Packet = ENetPacket;
@@ -37,11 +42,12 @@ module.exports.createClient = function(P){
 
 function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    events.EventEmitter.call(this);
+   this.setMaxListeners(0);
 
    var self = this;
    var pointer = 0;
 
-   //ENetHost from _pointer
+   //ENetHost from pointer
    if(arguments.length === 1 && (typeof address === 'number') ){
       pointer = address;
       self._pointer = pointer;
@@ -205,7 +211,7 @@ ENetPacket.prototype.destroy = function(){
 	ccall("enet_packet_destroy",'',['number'],[this._pointer]);
 };
 
-ENetPacket.prototype.FLAG_RELIABLE = 1;
+ENetPacket.prototype.FLAG_RELIABLE = ENET_PACKET_FLAG_RELIABLE;
 
 function ENetEvent(){
    this._pointer = ccall('jsapi_event_new','number');
@@ -307,6 +313,59 @@ ENetPeer.prototype.disconnectLater = function(data){
 ENetPeer.prototype.address = function(){
  var ptr = ccall('jsapi_peer_get_address','number',['number'],[this._pointer]);
  return new ENetAddress(ptr);
+};
+
+//turn a channel with peer into a node readable/writeable Stream
+// ref: https://github.com/substack/stream-handbook
+ENetHost.prototype.createStream = function(peer,channel){
+    var s = new Stream();
+    s.readable = true;
+    var paused = false;
+    var host = this;
+
+    host.on("disconnect",function(_peer){
+        if(peer._pointer === _peer._pointer){
+            if(s.writeable) s.destroy();
+            s.readable = false;
+            s.emit("end");
+        }
+    });
+
+    host.on("message",function(_peer,_packet,_channel){
+        if(peer._pointer === _peer._pointer &&
+            channel === _channel ){
+            if(!paused) s.emit("data",_packet.data());
+                //else ... queue incoming packets
+        }
+    });
+
+    s.writeable = true;
+
+    s.write = function(buf){
+        var err = peer.send(channel, new ENetPacket(buf,ENET_PACKET_FLAG_RELIABLE));
+        if(err <  0) return false; //(to pause source streams)
+        //ENET throttles net traffic.. (when should we return false to pause streams to assist ENet)
+    };
+    
+    s.end = function(buf){
+        if (arguments.length) s.write(buf);
+        s.writeable = false;
+    };
+    
+    s.destroy = function(){
+        s.writeable = false;
+    };
+
+    //todo - proper backpressure implementation
+    s.pause = function(){
+        //paused = true;
+    }
+    s.resume = function(){
+        //de-queue packets
+        //paused = false;
+    }
+
+    return s;
 };
 
 function __packet_filter (host_ptr){
