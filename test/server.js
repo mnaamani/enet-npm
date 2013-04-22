@@ -14,13 +14,9 @@ server.on("ready",function(ip,port){
 
 server.on("connect",function(peer,data){
     console.log("peer connected");
-    var packet = new enet.Packet( new Buffer("hello, im the server"),enet.FLAG_RELIABLE);
-    peer.send(0,packet);
-});
-
-server.on("message",function(peer,packet,chan){
-  console.log("got message:",packet.data().toString());
-  peer.disconnectLater();
+    var s=server.createStream(peer,0);
+    s.write("hello I'm the server!");
+    s.pipe(process.stdout);
 });
 
 server.start(20);

@@ -10,7 +10,7 @@ C.on("ready",function(ip,port){
 
 C.on("connect",function(peer,data){
     console.log("connected to:",peer.address().address());
-    var packet = new enet.Packet( new Buffer("hello, im the client"),enet.FLAG_RELIABLE);
+    var packet = new enet.Packet( new Buffer("hello, I'm the client\n"),enet.FLAG_RELIABLE);
     peer.send(0,packet);
 });
 
@@ -20,6 +20,8 @@ C.on("disconnect",function(peer,data){
 
 C.on("message",function(peer,packet,chan){
   console.log("got message:",packet.data().toString());
+  peer.disconnectNow();
+  process.exit();
 });
 
 console.log("connecting...");
