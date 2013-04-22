@@ -20,7 +20,7 @@ module.exports.Packet = ENetPacket;
 module.exports.inet_ip2long=ip2long;
 module.exports.inet_long2ip=long2ip;
 
-if(events && util ) util.inherits(ENetHost, events.EventEmitter);
+util.inherits(ENetHost, events.EventEmitter);
 
 module.exports.createServer = function(P){
     if(P) return new ENetHost(P.address,P.peers,P.channels,P.down,P.up,"server");
@@ -36,11 +36,7 @@ module.exports.createClient = function(P){
 }
 
 function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
-   if(events){
-      events.EventEmitter.call(this);
-   }else{
-       this._events = {};
-   }
+   events.EventEmitter.call(this);
 
    var self = this;
    var pointer = 0;
@@ -69,7 +65,7 @@ function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    }
    self._event = new ENetEvent();//allocate memory for events - free it when we destroy the host
    self._pointer = pointer;
-   self._socket_bound = false;
+
    var socketfd = ccall('jsapi_host_get_socket',"number",['number'],[self._pointer]);
    var socket = udp_sockets[socketfd]
    socket.on("listening",function(){
@@ -78,40 +74,12 @@ function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    });
 }
 
-if(!events){
-    ENetHost.prototype.on = function(e,cb){
-        this._events[e] ? this._events[e].push(cb) : this._events[e]=[cb];
-    };
-    ENetHost.prototype.emit = function(){
-        //used internally to fire events
-        //'apply' event handler function  to 'this' channel pass eventname and Object O
-        var self = this;
-        var e = arguments[0];
-        var params = Array.prototype.slice.apply(arguments,[1]);
-        if(this._events && this._events[e]){
-            this._events[e].forEach(function(cb){
-                cb.apply(self,params);
-            });
-        }
-    };
-}
-
 ENetHost.prototype.__service = cwrap('enet_host_service','number',['number','number','number']);
 ENetHost.prototype.service = function(){
    var self = this;
    if(!self._pointer || !self._event) return;
   try{
 
-/*  if we didn't yet bind() the socket we get an exception corresponding to a
-    a EINVAL error from  getsockname() syscall when calling .address() 
-	if(!self._socket_bound){
-                //keep checking until the port is non 0
-                if(self.address().port()!=0){
-                    self._socket_bound=true;
-                    self.emit('ready',self.address().address(),self.address().port());
-                }
-         }
-*/
    var err = self.__service(self._pointer,self._event._pointer,0);
    while( err > 0){
 	switch(self._event.type()){
@@ -205,7 +173,6 @@ ENetHost.prototype.stop = ENetHost.prototype.stop_watcher;
 function ENetPacket(pointer){
   if(arguments.length==1 && typeof arguments[0]=='number'){
 	this._pointer = arguments[0];
-	//console.log("Wrapping ENetPacket Pointer", this._pointer);
 	return this;
   }
   if(arguments.length>0 && typeof arguments[0]=='object'){
@@ -213,7 +180,6 @@ function ENetPacket(pointer){
 	var buf = arguments[0];
 	var flags = arguments[1] || 0;
 	this._pointer = ccall("enet_packet_create","number",['number','number','number'],[0,buf.length,flags]);
-	//console.log("ENetPacket malloc'ed",this._pointer);
         var begin = ccall("jsapi_packet_get_data","number",["number"],[this._pointer]);
         var end = begin + buf.length;
 	var c=0,i=begin;
@@ -320,7 +286,6 @@ function ENetPeer(pointer){
 ENetPeer.prototype.send = function(channel,packet){
 	var ret = ccall('enet_peer_send','number',['number','number','number'],[this._pointer,channel,packet._pointer]);
 	if(ret < 0) throw("enet.Peer send error");
-	//console.log("enet_peer_send return value:",ret);
 };
 ENetPeer.prototype.receive = function(){
 };
