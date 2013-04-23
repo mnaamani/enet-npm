@@ -342,14 +342,18 @@ ENetHost.prototype.createStream = function(peer,channel){
     s.writeable = true;
 
     s.write = function(buf){
-        var err = peer.send(channel, new ENetPacket(buf,ENET_PACKET_FLAG_RELIABLE));
-        if(err <  0) return false; //(to pause source streams)
+        if(!s.writeable) return;
+        try{
+          peer.send(channel, new ENetPacket(buf,ENET_PACKET_FLAG_RELIABLE));
+        }catch(e){
+          s.destroy();//connection lost with peer
+        }
         //ENET throttles net traffic.. (when should we return false to pause streams to assist ENet)
     };
     
     s.end = function(buf){
         if (arguments.length) s.write(buf);
-        s.writeable = false;
+        s.destroy();
     };
     
     s.destroy = function(){
