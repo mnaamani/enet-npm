@@ -26,6 +26,7 @@ module.exports.inet_ip2long=ip2long;
 module.exports.inet_long2ip=long2ip;
 
 util.inherits(ENetHost, events.EventEmitter);
+util.inherits(ENetPacket, events.EventEmitter);
 
 module.exports.createServer = function(P){
     if(P) return new ENetHost(P.address,P.peers,P.channels,P.down,P.up,"server");
@@ -85,7 +86,6 @@ ENetHost.prototype.service = function(){
    var self = this;
    if(!self._pointer || !self._event) return;
   try{
-
    var err = self.__service(self._pointer,self._event._pointer,0);
    while( err > 0){
 	switch(self._event.type()){
@@ -155,6 +155,10 @@ ENetHost.prototype.send = function(ip, port,buff){
 	var socket = ccall('jsapi_host_get_socket',"number",['number'],[this._pointer]);
 	udp_sockets[socket].send(buff,0,buff.length,port,ip);
 };
+ENetHost.prototype.flush = function(){
+	ccall('enet_host_flush',"",['number'],[this._pointer]);
+};
+
 ENetHost.prototype.connect = function(address,channelCount,data){
 	var ptr=ccall("jsapi_enet_host_connect","number",['number','number','number','number','number'],
 		[this._pointer,address.host(),address.port(),channelCount||5,data||0]);
@@ -177,6 +181,7 @@ ENetHost.prototype.start = ENetHost.prototype.start_watcher;
 ENetHost.prototype.stop = ENetHost.prototype.stop_watcher;
 
 function ENetPacket(pointer){
+  var self = this;
   if(arguments.length==1 && typeof arguments[0]=='number'){
 	this._pointer = arguments[0];
 	return this;
@@ -192,6 +197,14 @@ function ENetPacket(pointer){
 	for(;i<end;i++,c++){
 		HEAPU8[i]=buf.readUInt8(c);
 	}
+    var callback_ptr = FUNCTION_TABLE.length;
+    FUNCTION_TABLE[callback_ptr] = function(packet){
+        self.emit("free");
+        FUNCTION_TABLE[callback_ptr]=null;
+    };
+    FUNCTION_TABLE.push(0,0);
+    ccall("jsapi_packet_set_free_callback","",["number","number"],[this._pointer,callback_ptr]);
+    events.EventEmitter.call(this);
 	return this;
   }
   if(arguments.length>0 && typeof arguments[0]=='string'){
@@ -319,6 +332,8 @@ ENetPeer.prototype.address = function(){
 // ref: https://github.com/substack/stream-handbook
 ENetHost.prototype.createStream = function(peer,channel){
     var s = new Stream();
+    var totalPacketSizes = 0;
+
     s.readable = true;
     var paused = false;
     var host = this;
@@ -342,15 +357,28 @@ ENetHost.prototype.createStream = function(peer,channel){
     s.writeable = true;
 
     s.write = function(buf){
+        if(!buf.length) return;
         if(!s.writeable) return;
+        var packet;
         try{
-          peer.send(channel, new ENetPacket(buf,ENET_PACKET_FLAG_RELIABLE));
+           packet = new ENetPacket(buf,ENET_PACKET_FLAG_RELIABLE);
+           peer.send(channel, packet);
         }catch(e){
           s.destroy();//connection lost with peer
+          return;
         }
-        //ENET throttles net traffic.. (when should we return false to pause streams to assist ENet)
+
+        //dont allocate more than 256KByes of dynamic memory for outgoing packets
+        totalPacketSizes += buf.length;
+        packet.on("free",function(){//packets deallocated from memory (packet was sent)
+            totalPacketSizes -= buf.length;
+            if(totalPacketSizes < (262144)){
+                s.emit("drain");//resume the stream 
+            }
+        });
+        if(totalPacketSizes > (262144) ) return false;//pause stream that is piping into us
     };
-    
+
     s.end = function(buf){
         if (arguments.length) s.write(buf);
         s.destroy();

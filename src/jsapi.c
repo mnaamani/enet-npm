@@ -88,7 +88,9 @@ enet_uint8* jsapi_packet_get_data(ENetPacket* packet){
 int jsapi_packet_get_dataLength(ENetPacket* packet){
   return packet->dataLength;
 }
-
+void jsapi_packet_set_free_callback(ENetPacket *packet, ENetPacketFreeCallback callback){
+    packet->freeCallback = callback;
+}
 //ENetHost - helpers
 ENetAddress* jsapi_host_get_receivedAddress(ENetHost *host){
   return &host->receivedAddress;
