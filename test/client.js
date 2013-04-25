@@ -10,7 +10,7 @@ C.on("ready",function(ip,port){
 
 C.on("connect",function(peer,data){
     console.log("connected to:",peer.address().address());
-    var packet = new enet.Packet( new Buffer("hello, I'm the client\n"),enet.FLAG_RELIABLE);
+    var packet = new enet.Packet( new Buffer("hello, I'm the client\n"),enet.Packet.FLAG_RELIABLE);
     peer.send(0,packet);
 });
 
