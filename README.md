@@ -68,7 +68,8 @@ All connected peers to the host will be reset, and the resources used by the hos
 
     function(ip /*String*/, port /*Number*/){}
     
-When socket is bound to ip address and port.
+For a server host, when socket is bound to ip address and port.
+For a client host, when socket is bound after an connection is initiated.
     
     
 **Event "connect"**
