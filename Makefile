@@ -36,4 +36,4 @@ EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
 module:
 	$(EMCC) src/jsapi.c $(ENET_SOURCE)/*.c -I$(ENET_SOURCE)/include \
         --pre-js src/enet_pre.js --post-js src/enet_post.js -o lib/enet.js $(OPTIMISE) \
-        -s TOTAL_MEMORY=1048576  -s TOTAL_STACK=409600 -s ALLOW_MEMORY_GROWTH=1 -s LINKABLE=1 $(EXPORTED_FUNCTIONS)
+        -s TOTAL_MEMORY=1048576  -s TOTAL_STACK=409600 -s ALLOW_MEMORY_GROWTH=1 -s LINKABLE=1 $(EXPORTED_FUNCTIONS) -s ASM_JS=0
