@@ -208,5 +208,10 @@ Module['preRun'].push(function(){
             }
         };
 
+        __packet_filter = function(host_ptr){
+           var host = new ENetHost(host_ptr);
+           var addr = host.receivedAddress();
+           return global_packet_filter(addr.address(),addr.port());
+        }
 });//preRun
 

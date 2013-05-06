@@ -400,12 +400,6 @@ ENetHost.prototype.createStream = function(peer,channel){
     return s;
 };
 
-function __packet_filter (host_ptr){
-   var host = new ENetHost(host_ptr);
-   var addr = host.receivedAddress();
-   return global_packet_filter(addr.address(),addr.port());
-}
-
 /*
     Queue.js - Created by Stephen Morley 
     http://code.stephenmorley.org/ - released under the terms of
