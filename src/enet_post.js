@@ -4,7 +4,6 @@ var Stream;
 
 var ENET_HOST_SERVICE_INTERVAL = 30;//milli-seconds
 var ENET_PACKET_FLAG_RELIABLE = 1;
-var connectedPeers = {};
 
 events = require("events");
 util = require("util");
@@ -46,6 +45,7 @@ module.exports.createClient = function(P){
 function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    events.EventEmitter.call(this);
    this.setMaxListeners(0);
+   this.connectedPeers = {};
 
    var self = this;
    var pointer = 0;
@@ -96,7 +96,7 @@ ENetHost.prototype.service = function(){
 		case 0:	//none
 			break;
 		case 1: //connect
-            peer = connectedPeers[self._event.peerPtr()] || self._event.peer();
+            peer = self.connectedPeers[self._event.peerPtr()] || self._event.peer();
 			self.emit("connect",
               peer,
 			  self._event.data()
@@ -104,16 +104,16 @@ ENetHost.prototype.service = function(){
             peer.emit("connect",self._event.data());
 			break;			
 		case 2: //disconnect
-            peer = connectedPeers[self._event.peerPtr()] || self._event.peer();
+            peer = self.connectedPeers[self._event.peerPtr()] || self._event.peer();
 			self.emit("disconnect",
               peer,
 			  self._event.data()
 			);
             peer.emit("disconnect",self._event.data());
-            delete connectedPeers[peer._pointer];
+            delete self.connectedPeers[peer._pointer];
 			break;
 		case 3: //receive
-            peer = connectedPeers[self._event.peerPtr()] || self._event.peer();
+            peer = self.connectedPeers[self._event.peerPtr()] || self._event.peer();
 			self.emit("message",
               peer,
 			  self._event.packet(),
@@ -170,17 +170,27 @@ ENetHost.prototype.flush = function(){
 };
 
 ENetHost.prototype.connect = function(address,channelCount,data,connectCallback){
+    var self = this;
+    var peer;
 	var ptr=ccall("jsapi_enet_host_connect","number",['number','number','number','number','number'],
 		[this._pointer,address.host(),address.port(),channelCount||5,data||0]);
-    
-    var peer = new ENetPeer(ptr);
-    connectedPeers[ptr] = peer;
-    if(connectCallback && (typeof connectCallback === 'function')){
-      peer.on("connect",function(data){
-        connectCallback.call(peer,peer,data);
-      });
+
+    if(ptr){
+        peer = new ENetPeer(ptr);
+        self.connectedPeers[ptr] = peer;
+        if(connectCallback && (typeof connectCallback === 'function')){
+          peer.on("connect",function(data){
+            connectCallback.call(peer,undefined,peer,data);
+          });
+        }
+    	return peer;
+    }else{
+        //ptr is NULL - number of peers exceeded
+        if(connectCallback && (typeof connectCallback === 'function')){
+            connectCallback.call(null,new Error("maxpeers"));
+            return undefined;
+        }
     }
-	return peer;
 };
 ENetHost.prototype.start_watcher = function( ms_interval ){
    if(this._io_loop) return;

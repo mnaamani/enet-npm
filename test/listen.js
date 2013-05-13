@@ -18,7 +18,6 @@ var _handlers = {
         peer.send(channel, packet,function(){
             console.log("packet sent!");
         });
-        peer.disconnectLater();
     },
     telex: function(msg,rinfo){        
         console.log("telex:"+msg.toString());
