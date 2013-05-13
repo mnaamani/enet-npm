@@ -169,11 +169,18 @@ ENetHost.prototype.flush = function(){
 	ccall('enet_host_flush',"",['number'],[this._pointer]);
 };
 
-ENetHost.prototype.connect = function(address,channelCount,data){
+ENetHost.prototype.connect = function(address,channelCount,data,connectCallback){
 	var ptr=ccall("jsapi_enet_host_connect","number",['number','number','number','number','number'],
 		[this._pointer,address.host(),address.port(),channelCount||5,data||0]);
-    connectedPeers[ptr] = new ENetPeer(ptr);
-	return connectedPeers[ptr];
+    
+    var peer = new ENetPeer(ptr);
+    connectedPeers[ptr] = peer;
+    if(connectCallback && (typeof connectCallback === 'function')){
+      peer.on("connect",function(data){
+        connectCallback.call(peer,peer,data);
+      });
+    }
+	return peer;
 };
 ENetHost.prototype.start_watcher = function( ms_interval ){
    if(this._io_loop) return;
