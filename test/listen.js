@@ -11,10 +11,14 @@ var _handlers = {
     disconnect: function(peer,data){
         console.log("client disconnected. data: "+data);
     },
-    message: function(peer,packet,channel,data){
-        if(typeof alert !== 'undefined') alert("Msg:"+packet.data().toString()+"\nData:"+data+"\nChannel:"+channel);
-        console.log('packet data: '+packet.data().toString()+" channel: "+channel+" data: "+data);
-        peer.send(channel, new enet.Packet(packet.data(),1));
+    message: function(peer,packet,channel){
+        if(typeof alert !== 'undefined') alert("Msg:"+packet.data().toString()+"\nChannel:"+channel);
+        console.log('packet data: '+packet.data().toString()+" channel: "+channel);
+        var packet = new enet.Packet(packet.data(),1);
+        peer.send(channel, packet,function(){
+            console.log("packet sent!");
+        });
+        peer.disconnectLater();
     },
     telex: function(msg,rinfo){        
         console.log("telex:"+msg.toString());
