@@ -49,8 +49,11 @@ Setup some event listeners,
       console.log("socket bound to port",port);
     });
     
-    server.on("message",function(peer,packet){
-      console.log("received packet contents:",packet.data());
+    server.on("connect",function(peer,data){
+        //incoming connection peer connection
+        peer.on("message",function(packet,channel){
+            console.log("received packet contents:",packet.data());
+        });
     });
     
 Start polling the host for events at 50ms intervals, (default is 30ms if not specified)
@@ -69,21 +72,15 @@ All connected peers to the host will be reset, and the resources used by the hos
     function(ip /*String*/, port /*Number*/){}
     
 For a server host, when socket is bound to ip address and port.
-For a client host, when socket is bound after an connection is initiated.
+For a client host, when socket is bound after a connection is initiated.
     
     
 **Event "connect"**
 
     function(peer /*enet.Peer*/, data /*Number*/){}
 
-A connection was established with an enet peer. data is optional data sent by remote peer when connecting.
+Accepted incoming peer connection to our host, with optional connect data sent by remote peer.
     
-    
-**Event: "disconnect"**
-
-    function(peer /*enet.Peer*/, data /*Number*/){}
-    
-A peer disconnected or timed out, data is optional data sent by remote peer when disconnecting.
     
 **Event: "message"**
 
@@ -99,6 +96,23 @@ An enet packet was received on channel number channel_id, from enet peer.
 A raw JSON UDP packet (telehash telex) was received represented by a Buffer(),
 source is an object with *address* and *port* properties (source of udp packet)
 
+### Peer events
+
+**Event: "connect"**
+
+Connection to remote host established.
+
+**Event: "message"**
+
+    function(packet /*enet.Packet*/,channel_id /*Number*/){}
+
+**Event: "disconnect"**
+
+    function(data /*Number*/){}
+    
+Peer disconnected or connection lost, data is optional data sent by remote peer when disconnecting.
+    
+
 ### Creating an ENet client
 
 Create the host,
@@ -110,41 +124,37 @@ Create the host,
         up: 14400 / 8 /* 56K modem with 14 Kbps upstream bandwidth */
     });
                               
-    //setup event listeners (see creating enet server above)
-    
     client.start();
     
 ### Connecting to an ENet host
     /* connect to server 192.168.1.55:7777 */
     var server_addr = new enet.Address("192.168.1.55",7777);
-    /* Initiate the connection, allocating the two channels 0 and 1. */
+ 
+   /* Initiate the connection, allocating the two channels 0 and 1. */
     var peer = client.connect(server_addr,
                    2, /* channels */
-                   1337 /*data to send, (received in 'connect' event at server) */);
+                   1337, /* data to send, (received in 'connect' event at server) */
+                   function(err,peer,data){ /* on connect callback function */
+                      if(err){
+                        console.error(err);//either connect timeout or maximum peers exceeded
+                        return;
+                      }
+                      //connection to the remote host succeeded
+                      peer.ping();
+                   });
 
-    client.on("connect",function(peer,data){
-        //connected to peer
+    //connect event can also be handled with an event handler    
+    peer.on("connect",function(){
+        //connection to the remote host succeeded
         peer.ping();
     });
-
-    client.on("disconnect",function(peer,data){
-      //will occur on timeout trying to connect to server/peer or when remote server/peer disconnects/timesout
-    });
-
-    //special case - if two enet hosts simulaneously initiate connections to  each other 'connect' event will trigger twice.
-    client.on("connect",function(P,data){
-       if(peer._pointer === P._pointer){
-          //data will always be 0 - trigger when we initiate a connection
-       }else{
-          //data will be set by peer - when we accept an incoming connection (from same peer)
-       }
-    });
-
     
 ### Sending a packet to an ENet peer
     var packet = new enet.Packet( new Buffer("hello, world"),enet.Packet.FLAG_RELIABLE);
     
-    peer.send(0 /*channel*/, packet);
+    peer.send(0 /*channel*/, packet, function(){
+        //callback when packet is sent
+    });
 
 
 ### Disconnecting an ENet peer
