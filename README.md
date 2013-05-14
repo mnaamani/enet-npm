@@ -130,11 +130,11 @@ Create the host,
     /* connect to server 192.168.1.55:7777 */
     var server_addr = new enet.Address("192.168.1.55",7777);
  
-   /* Initiate the connection, allocating the two channels 0 and 1. */
+    /* Initiate the connection, allocating the two channels 0 and 1. */
     var peer = client.connect(server_addr,
                    2, /* channels */
                    1337, /* data to send, (received in 'connect' event at server) */
-                   function(err,peer,data){ /* on connect callback function */
+                   function(err,peer){ /* on connect callback function */
                       if(err){
                         console.error(err);//either connect timeout or maximum peers exceeded
                         return;
@@ -142,7 +142,7 @@ Create the host,
                       //connection to the remote host succeeded
                       peer.ping();
                    });
-
+                   
     //connect event can also be handled with an event handler    
     peer.on("connect",function(){
         //connection to the remote host succeeded
@@ -159,7 +159,7 @@ Create the host,
 
 ### Disconnecting an ENet peer
 
-    peer.disconnect();
+    peer.disconnect(999); /*send 999 as data with disconnect message*/
 or
 
     peer.reset();
