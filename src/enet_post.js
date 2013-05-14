@@ -174,15 +174,22 @@ ENetHost.prototype.connect = function(address,channelCount,data,connectCallback)
     var peer;
 	var ptr=ccall("jsapi_enet_host_connect","number",['number','number','number','number','number'],
 		[this._pointer,address.host(),address.port(),channelCount||5,data||0]);
-
+    var succeeded = false;
     if(ptr){
         peer = new ENetPeer(ptr);
         self.connectedPeers[ptr] = peer;
         if(connectCallback && (typeof connectCallback === 'function')){
           peer.on("connect",function(data){
+            succeeded = true;
             connectCallback.call(peer,undefined,peer,data);
           });
+          peer.on("disconnect",function(){
+            if(!succeeded) connectCallback.call(peer,new Error("timeout"));
+          });
         }
+        peer.on("disconnect",function(data){
+            if(!succeeded) self.emit("timeout");//timeout event if connect fails.
+        });
     	return peer;
     }else{
         //ptr is NULL - number of peers exceeded
