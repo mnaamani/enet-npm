@@ -1,4 +1,4 @@
-var enet = require("enet");
+var enet = require("../lib/enet");
 
 var server = enet.createServer({
     address: new enet.Address("0.0.0.0",6666),

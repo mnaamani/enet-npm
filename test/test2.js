@@ -21,20 +21,21 @@ server.on("connect",function(peer,data){
 
 var client = new enet.Host( new enet.Address("0.0.0.0",0),32);
 
-
-client.on("disconnect",function(){
-	console.log("client got disconnect");
-	server.destroy();
-	client.destroy();
-	process.exit();
-});
-client.on("message",function(peer,packet,channel,data){
-	console.log("got message:",packet.data().toString(),"on channel",channel);
-});
-
 client.on("ready",function(){
     console.log("host ready address:", client.address().address(), client.address().port());
-    client.connect(new enet.Address("127.0.0.1",5000),5,6969);
+    client.connect(new enet.Address("127.0.0.1",5000),5,6969,function(err,peer,data){
+        if(err) process.exit();
+        peer.on("disconnect",function(){
+        	console.log("client got disconnect");
+        	server.destroy();
+        	client.destroy();
+        	process.exit();
+        });
+        peer.on("message",function(packet,channel){
+	        console.log("got message:",packet.data().toString(),"on channel",channel);
+        });
+    });
 });
+
 server.start();
 client.start();

@@ -1,4 +1,4 @@
-var enet = require("enet");
+var enet = require("../lib/enet");
 var fs = require("fs");
 
 var server = enet.createServer({
