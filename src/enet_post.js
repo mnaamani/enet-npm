@@ -183,9 +183,9 @@ ENetHost.prototype.connect = function(address,channelCount,data,connectCallback)
         peer = new ENetPeer(ptr);
         self.connectedPeers[ptr] = peer;
         if(connectCallback && (typeof connectCallback === 'function')){
-          peer.on("connect",function(data){
+          peer.on("connect",function(){
             succeeded = true;
-            connectCallback.call(self,undefined,peer,data);
+            connectCallback.call(self,undefined,peer);
           });
           peer.on("disconnect",function(){
             if(!succeeded) connectCallback.call(self,new Error("timeout"));
