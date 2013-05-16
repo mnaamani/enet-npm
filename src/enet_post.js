@@ -100,12 +100,18 @@ ENetHost.prototype.service = function(){
             if(peer){
                 //outgoing connection
                 peer.emit("connect");
+    			self.emit("connect",
+                  peer,
+		    	  undefined,
+                  true
+			    );
             }else{
                 peer = self.connectedPeers[self._event.peerPtr()]=self._event.peer(); 
                 //incoming connection
     			self.emit("connect",
                   peer,
-		    	  self._event.data()
+		    	  self._event.data(),
+                  false
 			    );
             }
 			break;			
