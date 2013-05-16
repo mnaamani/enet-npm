@@ -383,30 +383,21 @@ ENetPeer.prototype.address = function(){
  return new ENetAddress(ptr);
 };
 
-//turn a channel with peer into a node readable/writeable Stream
+//turn a channel with peer into a node writeable Stream
 // ref: https://github.com/substack/stream-handbook
-ENetHost.prototype.createStream = function(peer,channel){
+ENetHost.prototype.createWriteStream = function(peer,channel){
     var s = new Stream();
     var totalPacketSizes = 0;
 
-    s.readable = true;
-    var paused = false;
+    s.readable = false;
+    s.writeable = true;
+
     var host = this;
 
     peer.on("disconnect",function(data){
             if(s.writeable) s.destroy();
-            s.readable = false;
             s.emit("end");
     });
-
-    peer.on("message",function(_packet,_channel){
-        if(channel === _channel ){
-            if(!paused) s.emit("data",_packet.data());
-                //else ... queue incoming packets
-        }
-    });
-
-    s.writeable = true;
 
     s.write = function(buf){
         if(!buf.length) return;
@@ -432,13 +423,36 @@ ENetHost.prototype.createStream = function(peer,channel){
     };
 
     s.end = function(buf){
-        if (arguments.length) s.write(buf);
+        if(arguments.length) s.write(buf);
         s.destroy();
     };
     
     s.destroy = function(){
         s.writeable = false;
     };
+
+    return s;
+};
+ENetHost.prototype.createReadStream = function(peer,channel){
+    var s = new Stream();
+
+    s.readable = true;
+    s.writeable = false;
+
+    var paused = false;
+    var host = this;
+
+    peer.on("disconnect",function(data){
+            s.readable = false;
+            s.emit("end");
+    });
+
+    peer.on("message",function(_packet,_channel){
+        if(channel === _channel ){
+            if(!paused) s.emit("data",_packet.data());
+                //else ... queue incoming packets
+        }
+    });
 
     //todo - proper backpressure implementation
     s.pause = function(){
