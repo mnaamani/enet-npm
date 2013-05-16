@@ -77,9 +77,10 @@ For a client host, when socket is bound after a connection is initiated.
     
 **Event "connect"**
 
-    function(peer /*enet.Peer*/, data /*Number*/){}
+    function(peer /*enet.Peer*/, data /*Number*/, outgoing /*Boolean*/){}
 
-Accepted incoming peer connection to our host, with optional connect data sent by remote peer.
+Peer connection established, outgoing 'true' if we initiated connection. data is optional connect data sent by remote peer
+for an incoming connection, undefined otherwise.
     
     
 **Event: "message"**
@@ -163,4 +164,6 @@ Create the host,
 or
 
     peer.reset();
+
+
 
