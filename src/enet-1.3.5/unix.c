@@ -5,10 +5,10 @@
 #ifndef WIN32
 
 #include <sys/types.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
-#include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <string.h>
