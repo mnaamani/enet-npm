@@ -50,14 +50,10 @@ function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    }
 
    if(host_type==='client'){
-     pointer = ccall('jsapi_enet_host_create_client', 'number', 
-			['number','number','number','number'],
-			[maxpeers || 128, maxchannels || 5, bw_down || 0, bw_up || 0]);     
+     pointer = jsapi_.enet_host_create_client(maxpeers || 128, maxchannels || 5, bw_down || 0, bw_up || 0);
 
    }else{ //default is a server
-     pointer = ccall('jsapi_enet_host_create', 'number', 
-			['number','number','number','number','number','number'],
-			[address.host(), address.port(),maxpeers || 128, maxchannels || 5, bw_down || 0, bw_up || 0]);     
+     pointer = jsapi_.enet_host_create(address.host(), address.port(),maxpeers || 128, maxchannels || 5, bw_down || 0, bw_up || 0);
    }
 
    if(pointer==0){
@@ -65,8 +61,7 @@ function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    }
    self._event = new ENetEvent();//allocate memory for events - free it when we destroy the host
    self._pointer = pointer;
-
-   var socketfd = ccall('jsapi_host_get_socket',"number",['number'],[self._pointer]);
+   var socketfd = jsapi_.host_get_socket(self._pointer);
    var socket = ENetSocketsBackend.getSocket(socketfd);
    if(socket._bound || socket.__receiving){
         setTimeout(function(){
@@ -155,33 +150,32 @@ ENetHost.prototype.destroy = function(){
    var self = this;
    self.stop();
    self._event.free();
-   ccall("enet_host_destroy",'',['number'],[this._pointer]);
+   enet_.host_destroy(this._pointer);
    delete self._pointer;
    delete self._event;
 };
 ENetHost.prototype.receivedAddress = function(){
-	var ptr = ccall("jsapi_host_get_receivedAddress",'number',['number'],[this._pointer]);
+	var ptr = jsapi_.host_get_receivedAddress(this._pointer);
 	return new ENetAddress(ptr);
 };
 ENetHost.prototype.address = function(){
 	//get node udp dgram.address()
-	var socket = ccall('jsapi_host_get_socket',"number",['number'],[this._pointer]);
+	var socket = jsapi_.host_get_socket(this._pointer);
 	var addr = ENetSocketsBackend.getSocket(socket).address();
 	return new ENetAddress(addr.address,addr.port);
 };
 ENetHost.prototype.send = function(ip, port,buff){
-	var socket = ccall('jsapi_host_get_socket',"number",['number'],[this._pointer]);
+	var socket = jsapi_.host_get_socket(this._pointer);
 	ENetSocketsBackend.getSocket(socket).send(buff,0,buff.length,port,ip);
 };
 ENetHost.prototype.flush = function(){
-	ccall('enet_host_flush',"",['number'],[this._pointer]);
+	enet_.host_flush(this._pointer);
 };
 
 ENetHost.prototype.connect = function(address,channelCount,data,connectCallback){
     var self = this;
     var peer;
-	var ptr=ccall("jsapi_enet_host_connect","number",['number','number','number','number','number'],
-		[this._pointer,address.host(),address.port(),channelCount||5,data||0]);
+	var ptr=jsapi_.enet_host_connect(this._pointer,address.host(),address.port(),channelCount||5,data||0);
     var succeeded = false;
     if(ptr){
         peer = new ENetPeer(ptr);
@@ -229,8 +223,8 @@ function ENetPacket(pointer){
 	//construct a new packet from node buffer
 	var buf = arguments[0];
 	var flags = arguments[1] || 0;
-	this._pointer = ccall("enet_packet_create","number",['number','number','number'],[0,buf.length,flags]);
-        var begin = ccall("jsapi_packet_get_data","number",["number"],[this._pointer]);
+	this._pointer = enet_.packet_create(0,buf.length,flags);
+        var begin = jsapi_.packet_get_data(this._pointer);
         var end = begin + buf.length;
 	var c=0,i=begin;
 	for(;i<end;i++,c++){
@@ -242,7 +236,7 @@ function ENetPacket(pointer){
         FUNCTION_TABLE[callback_ptr]=null;
     };
     FUNCTION_TABLE.push(0,0);
-    ccall("jsapi_packet_set_free_callback","",["number","number"],[this._pointer,callback_ptr]);
+    jsapi_.packet_set_free_callback(this._pointer,callback_ptr);
     events.EventEmitter.call(this);
 	return this;
   }
@@ -251,47 +245,47 @@ function ENetPacket(pointer){
   }
 };
 ENetPacket.prototype.data = function(){
-	var begin = ccall("jsapi_packet_get_data","number",["number"],[this._pointer]);
-	var end = begin + ccall("jsapi_packet_get_dataLength","number",["number"],[this._pointer]);
+	var begin = jsapi_.packet_get_data(this._pointer);
+	var end = begin + jsapi_.packet_get_dataLength(this._pointer);
 	return new Buffer(HEAPU8.subarray(begin,end),"byte");
 	//return HEAPU8.subarray(begin,end);
 };
 ENetPacket.prototype.dataLength = function(){
-	return ccall("jsapi_packet_get_dataLength","number",["number"],[this._pointer]);
+	return jsapi_.packet_get_dataLength(this._pointer);
 };
 ENetPacket.prototype.destroy = function(){
-	ccall("enet_packet_destroy",'',['number'],[this._pointer]);
+	enet_.packet_destroy(this._pointer);
 };
 
 ENetPacket.prototype.FLAG_RELIABLE = ENET_PACKET_FLAG_RELIABLE;
 
 function ENetEvent(){
-   this._pointer = ccall('jsapi_event_new','number');
+   this._pointer = jsapi_.event_new();
 };
 
 ENetEvent.prototype.free = function(){
-   ccall('jsapi_event_free','',['number'],[this._pointer]);
+   jsapi_.event_free(this._pointer);
 };
 
 ENetEvent.prototype.type = function(){
-   return ccall('jsapi_event_get_type','number',['number'],[this._pointer]);
+   return jsapi_.event_get_type(this._pointer);
 };
 ENetEvent.prototype.peer = function(){
-   var ptr = ccall('jsapi_event_get_peer','number',['number'],[this._pointer]);
+   var ptr = jsapi_.event_get_peer(this._pointer);
    return new ENetPeer(ptr);
 };
 ENetEvent.prototype.peerPtr = function(){
-   return ccall('jsapi_event_get_peer','number',['number'],[this._pointer]);
+   return jsapi_.event_get_peer(this._pointer);
 };
 ENetEvent.prototype.packet = function(){
-   var ptr = ccall('jsapi_event_get_packet','number',['number'],[this._pointer]);
+   var ptr = jsapi_.event_get_packet(this._pointer);
    return new ENetPacket(ptr);
 };
 ENetEvent.prototype.data = function(){
-  return ccall('jsapi_event_get_data','number',['number'],[this._pointer]);
+  return jsapi_.event_get_data(this._pointer);
 };
 ENetEvent.prototype.channelID = function(){
- return ccall('jsapi_event_get_channelID','number',['number'],[this._pointer]);
+ return jsapi_.event_get_channelID(this._pointer);
 };
 
 function ENetAddress(){
@@ -323,7 +317,7 @@ function ENetAddress(){
 };
 ENetAddress.prototype.host = function(){
   if(this._pointer){
-	var hostptr = ccall('jsapi_address_get_host','number',['number'],[this._pointer]);
+	var hostptr = jsapi_.address_get_host(this._pointer);
 	return HEAPU32[hostptr>>2];
   }else{
 	return this._host;
@@ -331,7 +325,7 @@ ENetAddress.prototype.host = function(){
 };
 ENetAddress.prototype.port = function(){
   if(this._pointer){
-    return ccall('jsapi_address_get_port','number',['number'],[this._pointer]);
+    return jsapi_.address_get_port(this._pointer);
   }else{
     return this._port;
   }
@@ -353,7 +347,7 @@ ENetPeer.prototype.send = function(channel,packet,callback){
         if(callback) callback.call(self);
       });
     }
-	var ret = ccall('enet_peer_send','number',['number','number','number'],[this._pointer,channel,packet._pointer]);
+	var ret = enet_.peer_send(this._pointer,channel,packet._pointer);
 	if(ret < 0) {
             callback = null;
             throw("enet.Peer send error");
@@ -362,22 +356,22 @@ ENetPeer.prototype.send = function(channel,packet,callback){
 ENetPeer.prototype.receive = function(){
 };
 ENetPeer.prototype.reset = function(){
-  ccall('enet_peer_reset','',['number'],[this._pointer]);
+  enet_.peer_reset(this._pointer);
 };
 ENetPeer.prototype.ping = function(){
-  ccall('enet_peer_ping','',['number'],[this._pointer]);
+  enet_.peer_ping(this._pointer);
 };
 ENetPeer.prototype.disconnect = function(data){
-  ccall('enet_peer_disconnect','',['number','number'],[this._pointer, data||0]);
+  enet_.peer_disconnect(this._pointer, data||0);
 };
 ENetPeer.prototype.disconnectNow = function(data){
-  ccall('enet_peer_disconnect_now','',['number','number'],[this._pointer,data||0]);
+  enet_.peer_disconnect_now(this._pointer,data||0);
 };
 ENetPeer.prototype.disconnectLater = function(data){
-  ccall('enet_peer_disconnect_later','',['number','number'],[this._pointer,data||0]);
+  enet_.peer_disconnect_later(this._pointer,data||0);
 };
 ENetPeer.prototype.address = function(){
- var ptr = ccall('jsapi_peer_get_address','number',['number'],[this._pointer]);
+ var ptr = jsapi_.peer_get_address(this._pointer);
  return new ENetAddress(ptr);
 };
 
