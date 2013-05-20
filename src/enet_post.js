@@ -1,19 +1,10 @@
-var events, util, Queue, DGRAM;
-var global_packet_filter;
-var Stream;
-
 var ENET_HOST_SERVICE_INTERVAL = 30;//milli-seconds
 var ENET_PACKET_FLAG_RELIABLE = 1;
 
-events = require("events");
-util = require("util");
-DGRAM = require("dgram");
-Stream = require("stream");
-
-module.exports.init = function( pf_func){
+module.exports.init = function(pf_func){
     if(pf_func){
         _jsapi_init(1);
-        global_packet_filter = pf_func;
+        ENetSocketsBackend.packetFilter.set(pf_func);
     }else{
         _jsapi_init(0);
     }
@@ -22,8 +13,8 @@ module.exports.init = function( pf_func){
 module.exports.Host = ENetHost;
 module.exports.Address = ENetAddress;
 module.exports.Packet = ENetPacket;
-module.exports.inet_ip2long=ip2long;
-module.exports.inet_long2ip=long2ip;
+module.exports.inet_ip2long=ENetSocketsBackend.ip2long;
+module.exports.inet_long2ip=ENetSocketsBackend.long2ip;
 
 util.inherits(ENetHost, events.EventEmitter);
 util.inherits(ENetPacket, events.EventEmitter);
@@ -76,7 +67,7 @@ function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    self._pointer = pointer;
 
    var socketfd = ccall('jsapi_host_get_socket',"number",['number'],[self._pointer]);
-   var socket = udp_sockets[socketfd];
+   var socket = ENetSocketsBackend.getSocket(socketfd);
    if(socket._bound || socket.__receiving){
         setTimeout(function(){
             socket.setBroadcast(true);
@@ -175,12 +166,12 @@ ENetHost.prototype.receivedAddress = function(){
 ENetHost.prototype.address = function(){
 	//get node udp dgram.address()
 	var socket = ccall('jsapi_host_get_socket',"number",['number'],[this._pointer]);
-	var addr = udp_sockets[socket].address();
+	var addr = ENetSocketsBackend.getSocket(socket).address();
 	return new ENetAddress(addr.address,addr.port);
 };
 ENetHost.prototype.send = function(ip, port,buff){
 	var socket = ccall('jsapi_host_get_socket',"number",['number'],[this._pointer]);
-	udp_sockets[socket].send(buff,0,buff.length,port,ip);
+	ENetSocketsBackend.getSocket(socket).send(buff,0,buff.length,port,ip);
 };
 ENetHost.prototype.flush = function(){
 	ccall('enet_host_flush',"",['number'],[this._pointer]);
@@ -315,13 +306,13 @@ function ENetAddress(){
    }
    if(arguments.length==1 && typeof arguments[0]=='string'){
 	var ipp =arguments[0].split(':');
-	this._host = ip2long(ipp[0]);
+	this._host = ENetSocketsBackend.ip2long(ipp[0]);
 	this._port = ipp[1]||0;
 	return this;
    }
    if(arguments.length==2){
 	if(typeof arguments[0] == 'string'){
-		this._host = ip2long((arguments[0]));
+		this._host = ENetSocketsBackend.ip2long((arguments[0]));
 	}else{
 		this._host = arguments[0];
 	}
@@ -346,9 +337,9 @@ ENetAddress.prototype.port = function(){
   }
 };
 ENetAddress.prototype.address = function(){ 
-  if(this._pointer) return long2ip(this.host(),'ENetAddress.prototype.address from pointer');
-  return long2ip(this.host(),'ENetAddress.prototype.address from local');
-}
+  if(this._pointer) return ENetSocketsBackend.long2ip(this.host(),'ENetAddress.prototype.address from pointer');
+  return ENetSocketsBackend.long2ip(this.host(),'ENetAddress.prototype.address from local');
+};
 
 function ENetPeer(pointer){
   if(pointer) this._pointer = pointer; else throw("ENetPeer null pointer");
