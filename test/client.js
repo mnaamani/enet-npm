@@ -14,14 +14,13 @@ C.on("connect",function(peer,data){
     peer.send(0,packet);
 });
 
-C.on("disconnect",function(peer,data){
-    console.log("disconnected from:",peer.address().address());
-});
-
 C.on("message",function(peer,packet,chan){
   console.log("got message:",packet.data().toString());
-  peer.disconnectNow();
-  process.exit();
+  peer.disconnect();
+  peer.on("disconnect",function(){
+      console.log("disconnected");
+      C.destroy();
+  });
 });
 
 console.log("connecting...");
