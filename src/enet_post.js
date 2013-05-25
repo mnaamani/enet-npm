@@ -62,7 +62,7 @@ function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    self._event = new ENetEvent();//allocate memory for events - free it when we destroy the host
    self._pointer = pointer;
    var socketfd = jsapi_.host_get_socket(self._pointer);
-   var socket = ENetSocketsBackend.getSocket(socketfd);
+   var socket = self._socket = ENetSocketsBackend.getSocket(socketfd);
    if(socket._bound || socket.__receiving){
         setTimeout(function(){
             socket.setBroadcast(true);
@@ -159,14 +159,11 @@ ENetHost.prototype.receivedAddress = function(){
 	return new ENetAddress(ptr);
 };
 ENetHost.prototype.address = function(){
-	//get node udp dgram.address()
-	var socket = jsapi_.host_get_socket(this._pointer);
-	var addr = ENetSocketsBackend.getSocket(socket).address();
+	var addr = this._socket.address();
 	return new ENetAddress(addr.address,addr.port);
 };
 ENetHost.prototype.send = function(ip, port,buff){
-	var socket = jsapi_.host_get_socket(this._pointer);
-	ENetSocketsBackend.getSocket(socket).send(buff,0,buff.length,port,ip);
+	this._socket.send(buff,0,buff.length,port,ip);
 };
 ENetHost.prototype.flush = function(){
 	enet_.host_flush(this._pointer);
