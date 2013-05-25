@@ -237,7 +237,7 @@ Module['preRun'].push(function(){
         Module["jsapi"]["enet_host_create"] = jsapi_.enet_host_create = cwrap('jsapi_enet_host_create', 'number',
             ['number','number','number','number','number','number']);
         Module["jsapi"]["host_get_socket"] = jsapi_.host_get_socket = cwrap('jsapi_host_get_socket',"number",['number']);
-        Module["jsapi"]["host_get_receivedAddress"] = jsapi_.host_receivedAddress = cwrap("jsapi_host_get_receivedAddress",'number',['number']);
+        Module["jsapi"]["host_get_receivedAddress"] = jsapi_.host_get_receivedAddress = cwrap("jsapi_host_get_receivedAddress",'number',['number']);
         Module["jsapi"]["enet_host_connect"] = jsapi_.enet_host_connect = cwrap("jsapi_enet_host_connect","number",['number','number','number','number','number']);
         Module["jsapi"]["packet_get_data"] = jsapi_.packet_get_data = cwrap("jsapi_packet_get_data","number",["number"]);
         Module["jsapi"]["packet_set_free_callback"] = jsapi_.packet_set_free_callback = cwrap("jsapi_packet_set_free_callback","",["number","number"]);
@@ -287,7 +287,7 @@ Module['preRun'].push(function(){
         _enet_socket_destroy = backend.destroySocket;
 
         __packet_filter = function(host_ptr){
-           var addr = new ENetAddress(jsapi_.host_receivedAddress(host_ptr));
+           var addr = new ENetAddress(jsapi_.host_get_receivedAddress(host_ptr));
            return backend.packetFilter.apply(addr.address(),addr.port());
         }
 });
