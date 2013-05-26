@@ -14,9 +14,16 @@ var server = new enet.Host(addr1,32);
 server.on("connect",function(peer,data){
 	console.log("peer connected. data=",data);
 	console.log("peer address:",peer.address().address()+":"+peer.address().port());
-	var packet = new enet.Packet("Bye Bye",1);
-	peer.send(1,packet);
+	var packet1 = new enet.Packet("Bye Bye1",1);
+	var packet2 = new enet.Packet("Bye Bye2",1);
+	peer.send(1,packet1,function(err){
+        if(!err)console.log("packet1 sent");
+    });
 	peer.disconnectLater();
+    //packet2 will not get queed because disconnectLater() was called
+    peer.send(1,packet2,function(err){
+        if(!err) console.log("packet2 sent");
+    });
 });
 
 var client = new enet.Host( new enet.Address("0.0.0.0",0),32);

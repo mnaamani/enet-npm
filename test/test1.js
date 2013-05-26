@@ -10,8 +10,8 @@ var _handlers = {
     	console.log("client disconnected. data=",data);
     	process.exit();
     },
-    message: function(peer,packet,channel,data){
-    	console.log('packet data:',packet.data().toString(), "channel:",channel,"data=",data);
+    message: function(peer,packet,channel){
+    	console.log('packet data:',packet.data().toString(), "channel:",channel);
         //echo back the packet
     	//peer.send(channel, new enet.Packet(packet.data(),1));
     },
