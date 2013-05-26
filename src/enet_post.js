@@ -340,13 +340,11 @@ ENetPeer.prototype.send = function(channel,packet,callback){
     var self = this;
     if(callback && callback instanceof Function){
       packet.on("free",function(){
-        if(callback) callback.call(self);
+        if(callback) callback.call(self,undefined);
       });
     }
-	var ret = enet_.peer_send(this._pointer,channel,packet._pointer);
-	if(ret < 0) {
-            callback = null;
-            throw("enet.Peer send error");
+	if(enet_.peer_send(this._pointer,channel,packet._pointer) !== 0 ){
+        if(callback) callback.call(self,new Error('Packet not queued'));
     }
 };
 ENetPeer.prototype.receive = function(){
@@ -375,12 +373,9 @@ ENetPeer.prototype.address = function(){
 // ref: https://github.com/substack/stream-handbook
 ENetHost.prototype.createWriteStream = function(peer,channel){
     var s = new Stream();
-    var totalPacketSizes = 0;
 
     s.readable = false;
     s.writeable = true;
-
-    var host = this;
 
     peer.on("disconnect",function(data){
             if(s.writeable) s.destroy();
@@ -390,24 +385,15 @@ ENetHost.prototype.createWriteStream = function(peer,channel){
     s.write = function(buf){
         if(!buf.length) return;
         if(!s.writeable) return;
-        var packet;
-        try{
-           packet = new ENetPacket(buf,ENET_PACKET_FLAG_RELIABLE);
-           peer.send(channel, packet);
-        }catch(e){
-          s.destroy();//connection lost with peer
-          return;
-        }
-
-        //dont allocate more than 256KByes of dynamic memory for outgoing packets
-        totalPacketSizes += buf.length;
-        packet.on("free",function(){//packets deallocated from memory (packet was sent)
-            totalPacketSizes -= buf.length;
-            if(totalPacketSizes < (262144)){
-                s.emit("drain");//resume the stream 
+        var packet = new ENetPacket(buf,ENET_PACKET_FLAG_RELIABLE);
+        peer.send(channel, packet,function(err){
+            if(err) {
+                s.destroy();
+                return;
             }
+            s.emit("drain");
         });
-        if(totalPacketSizes > (262144) ) return false;//pause stream that is piping into us
+        return false;
     };
 
     s.end = function(buf){
@@ -428,7 +414,6 @@ ENetHost.prototype.createReadStream = function(peer,channel){
     s.writeable = false;
 
     var paused = false;
-    var host = this;
 
     peer.on("disconnect",function(data){
             s.readable = false;

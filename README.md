@@ -144,7 +144,7 @@ Create the host,
                       peer.ping();
                    });
                    
-    //connect event can also be handled with an event handler    
+    //connect event can also be handled with an event handler
     peer.on("connect",function(){
         //connection to the remote host succeeded
         peer.ping();
@@ -153,8 +153,9 @@ Create the host,
 ### Sending a packet to an ENet peer
     var packet = new enet.Packet( new Buffer("hello, world"),enet.Packet.FLAG_RELIABLE);
     
-    peer.send(0 /*channel*/, packet, function(){
-        //callback when packet is sent
+    peer.send(0 /*channel*/, packet, function(err){
+        //callback when packet is sent 'err' will be 'undefined'
+        //If error occurs trying to queue the packet err be an instance of Error()
     });
 
 
