@@ -80,6 +80,7 @@ ENetHost.prototype.__service = cwrap('enet_host_service','number',['number','num
 ENetHost.prototype.service = function(){
    var self = this;
    var peer;
+   var recvdAddr;
 
    if(!self._pointer || !self._event) return;
   try{
@@ -125,16 +126,14 @@ ENetHost.prototype.service = function(){
             peer.emit("message",self._event.packet(),self._event.channelID());
 			self._event.packet().destroy();
 			break;
-		case 100: //rawpacket
-			try{
-			JSON.parse(self._event.packet().data().toString());
+		case 100: //JSON,telex
+            recvdAddr = self.receivedAddress();
 			self.emit("telex",
 			  self._event.packet().data(),{
-			    'address':self.receivedAddress().address(),
-			    'port':self.receivedAddress().port()
+			    'address':recvdAddr.address(),
+			    'port':recvdAddr.port()
  			  }
 			);
-			}catch(E){}
 			self._event.packet().destroy();
 			break;
 	}

@@ -986,6 +986,20 @@ enet_protocol_handle_incoming_commands (ENetHost * host, ENetEvent * event)
     if (host -> receivedDataLength < (size_t) & ((ENetProtocolHeader *) 0) -> sentTime)
       return 0;
 
+    /** crude telex/JSON detection **/
+    if(
+        /*1*/(host->receivedDataLength >= 2 && host->receivedData[0]=='{' && host->receivedData[host->receivedDataLength-1]=='}') ||
+        /*2*/(host->receivedDataLength >= 3 && host->receivedData[0]=='{' && (host->receivedData[host->receivedDataLength-1]=='}' ||
+          (host->receivedData[host->receivedDataLength-2]=='}' && host->receivedData[host->receivedDataLength-1]=='\n')))
+    ){
+              if(event != NULL){
+                event->type = 100;
+                event->data = 0;
+                event->packet = enet_packet_create(host->receivedData, host->receivedDataLength, ENET_PACKET_FLAG_NO_ALLOCATE);
+                return 1;
+              }
+    }
+
     header = (ENetProtocolHeader *) host -> receivedData;
 
     peerID = ENET_NET_TO_HOST_16 (header -> peerID);
@@ -1232,14 +1246,6 @@ enet_protocol_receive_incoming_commands (ENetHost * host, ENetEvent * event)
           return -1;
 
        default:
-	  //not an enet packet
-          if (event != NULL){
-                event->type = 100;
-                event->data = 0;
-                event->packet = enet_packet_create(host->receivedData, host->receivedDataLength, ENET_PACKET_FLAG_NO_ALLOCATE);
-                return 1;
-          }
-
           break;
        }
     }
