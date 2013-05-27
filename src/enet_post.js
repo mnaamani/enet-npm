@@ -338,6 +338,7 @@ function ENetPeer(pointer){
 };
 ENetPeer.prototype.send = function(channel,packet,callback){
     var self = this;
+    if(packet instanceof Buffer) packet = new ENetPacket(packet,ENET_PACKET_FLAG_RELIABLE);
     if(callback && callback instanceof Function){
       packet.on("free",function(){
         if(callback) callback.call(self,undefined);
