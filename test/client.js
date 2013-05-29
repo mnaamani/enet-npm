@@ -12,15 +12,14 @@ C.on("connect",function(peer,data){
     console.log("connected to:",peer.address().address());
     var packet = new enet.Packet( new Buffer("hello, I'm the client\n"),enet.Packet.FLAG_RELIABLE);
     peer.send(0,packet);
+    peer.on("disconnect",function(){
+      console.log("disconnected");
+      C.destroy();
+   });
 });
 
 C.on("message",function(peer,packet,chan){
   console.log("got message:",packet.data().toString());
-  peer.disconnect();
-  peer.on("disconnect",function(){
-      console.log("disconnected");
-      C.destroy();
-  });
 });
 
 console.log("connecting...");
