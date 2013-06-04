@@ -90,32 +90,52 @@ var ENetSocketsBackend = (function(){
       HEAPU32[($sin+8)>>2] = address;
   }
 
+  /*
+   * http://pubs.opengroup.org/onlinepubs/009695399/functions/recvmsg.html
+   */
   backend.recvMsg = function($sockfd, $msgHdr, $flags){
           var udpsocket = sockets[$sockfd];
-          if(!udpsocket) return -1;
-          if(!udpsocket.packets.getLength()) return 0;
-          //dequeue
+          if(!udpsocket) {
+             ___setErrNo(ERRNO_CODES.EBADF);
+             return -1;
+          }
+          if(!udpsocket.packets.getLength()){
+             ___setErrNo(ERRNO_CODES.EAGAIN);
+             return -1;
+          }
           var packet = udpsocket.packets.dequeue();
-          if(!packet) return 0;
-
+          if(!packet){
+            ___setErrNo(ERRNO_CODES.EAGAIN);
+            return -1;
+          }
           var $sin=HEAP32[(($msgHdr)>>2)];
           var $buffer=HEAP32[(($msgHdr+8)>>2)];
-          HEAP32[(($buffer+4)>>2)]=packet.dataLength;//dataLength
+          var $buffer_size = HEAP32[(($buffer+4)>>2)];
+          HEAP32[(($buffer+4)>>2)]=packet.dataLength;
+
           var $data=HEAP32[($buffer)>>2];
 
-          //Copy Node Buffer packet.data into HEAP8[($data)|0],HEAP8[($data+1)|0]
-          //MAX_MTU?
-          for(var i=0;i<packet.dataLength;i++){
+          for(var i=0;i<packet.dataLength && i<$buffer_size;i++){
             HEAPU8[($data+i)|0]=packet.data.readUInt8(i);
           }
-          set_sockaddr_in($sin,1,_htons(packet.port),ip2long(packet.ip));
-          return packet.dataLength;//truncation??
 
+          set_sockaddr_in($sin,1,_htons(packet.port),ip2long(packet.ip));
+          if(packet.dataLength > $buffer_size){
+            //MSG_TRUNC shall be set in the msg_flags member of the msghdr structure
+            HEAP32[($msgHdr+16)>>2] = 0x20;
+          }
+          return packet.dataLength;
   };
 
+  /*
+   * http://pubs.opengroup.org/onlinepubs/009695399/functions/sendmsg.html
+   */
   backend.sendMsg = function($sockfd, $msgHdr, $flags){
           var udpsocket = sockets[$sockfd];
-          if(!udpsocket) return -1;
+          if(!udpsocket) {
+             ___setErrNo(ERRNO_CODES.EBADF);
+             return -1;
+          }
           var chunks = [];
           var chunk;
           var chunkLength;
@@ -124,14 +144,14 @@ var ENetSocketsBackend = (function(){
           var $bufferCount=HEAPU32[($msgHdr+12)>>2];
           var packet = {};
           var addr = get_sockaddr_in($sin);
-
-          for( var $x=0; $x < $bufferCount ; $x++ ){
+          var $x,i;
+          for($x=0; $x < $bufferCount ; $x++ ){
               chunkLength = HEAP32[(($buffers+($x<<3)+4)>>2)];
               chunk = new Buffer(chunkLength);
               $data=HEAP32[($buffers+($x<<3))>>2]
               if(!chunkLength) continue;
               //Copy HEAP into node Buffer
-              for(var i=0;i<chunkLength;i++){
+              for(i=0;i<chunkLength;i++){
                 chunk.writeUInt8(HEAPU8[($data+i)|0],i);
               }
               chunks.push(chunk);
@@ -142,10 +162,13 @@ var ENetSocketsBackend = (function(){
            packet.port=_ntohs(addr.port);
            packet.data = BufferConcat(chunks);
            packet.dataLength = packet.data.length;
-           udpsocket.send(packet.data,0,packet.data.length,packet.port,packet.ip,function(){
-              //console.log("Sent Packet:",packet);
-           });
-                  
+           try{
+                udpsocket.send(packet.data,0,packet.data.length,packet.port,packet.ip);
+           }
+           catch(E){
+                ___setErrNo(ERRNO_CODES.EIO);
+                return -1;
+           }
            return packet.data.length;
   };
 
