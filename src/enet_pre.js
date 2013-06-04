@@ -70,10 +70,16 @@ var ENetSocketsBackend = (function(){
           }
           if(sockets[$socket]){
               //console.error("binding to",long2ip($host),$port);
-              sockets[$socket].bind($port,long2ip($host));
-              return 0;
+              try{
+                sockets[$socket].bind($port,long2ip($host));
+                return 0;
+              }catch(E){
+                return -1;
+              }
+          }else{
+              ___setErrNo(ERRNO_CODES.EBADF);
           }
-          return -1;//todo: set error number
+          return -1;
   };
 
   function get_sockaddr_in($sin){
