@@ -1,9 +1,9 @@
 var Buffer = require("buffer").Buffer;
 
-events = require("events");
-util = require("util");
-dgram = require("dgram");
-Stream = require("stream");
+var events = require("events");
+var util = require("util");
+var dgram = require("dgram");
+var Stream = require("stream");
 
 var jsapi_ = {};
 var enet_ = {};
