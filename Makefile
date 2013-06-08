@@ -3,7 +3,7 @@ OPTIMISE= -O2 --closure 0 --llvm-opts 1 --minify 0
 ENET_SOURCE=./src/enet-1.3.5
 
 EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
-    '_init_enet_sockets_backend' \
+    '_init_enet_sockets_backend', \
     '_enet_host_service', \
     '_enet_host_destroy', \
     '_enet_host_flush', \
