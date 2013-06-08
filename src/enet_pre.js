@@ -150,7 +150,7 @@ var ENetSocketsBackend = (function(){
           var $bufferCount=HEAPU32[($msgHdr+12)>>2];
           var packet = {};
           var addr = get_sockaddr_in($sin);
-          var $x,i;
+          var $data,$x,i;
           for($x=0; $x < $bufferCount ; $x++ ){
               chunkLength = HEAP32[(($buffers+($x<<3)+4)>>2)];
               chunk = new Buffer(chunkLength);
