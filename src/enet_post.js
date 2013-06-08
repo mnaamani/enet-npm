@@ -4,7 +4,7 @@ var ENET_PACKET_FLAG_RELIABLE = 1;
 module.exports.init = function(pf_func){
     if(pf_func){
         _jsapi_init(1);
-        ENetSocketsBackend.packetFilter.set(pf_func);
+        ENetSockets.packetFilter.set(pf_func);
     }else{
         _jsapi_init(0);
     }
@@ -13,8 +13,8 @@ module.exports.init = function(pf_func){
 module.exports.Host = ENetHost;
 module.exports.Address = ENetAddress;
 module.exports.Packet = ENetPacket;
-module.exports.inet_ip2long=ENetSocketsBackend.ip2long;
-module.exports.inet_long2ip=ENetSocketsBackend.long2ip;
+module.exports.inet_ip2long=ENetSockets.ip2long;
+module.exports.inet_long2ip=ENetSockets.long2ip;
 
 util.inherits(ENetHost, events.EventEmitter);
 util.inherits(ENetPacket, events.EventEmitter);
@@ -62,7 +62,7 @@ function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    self._event = new ENetEvent();//allocate memory for events - free it when we destroy the host
    self._pointer = pointer;
    var socketfd = jsapi_.host_get_socket(self._pointer);
-   var socket = self._socket = ENetSocketsBackend.getSocket(socketfd);
+   var socket = self._socket = ENetSockets.getSocket(socketfd);
    if(socket._bound || socket.__receiving){
         setTimeout(function(){
             socket.setBroadcast(true);
@@ -296,13 +296,13 @@ function ENetAddress(){
    }
    if(arguments.length==1 && typeof arguments[0]=='string'){
 	var ipp =arguments[0].split(':');
-	this._host = ENetSocketsBackend.ip2long(ipp[0]);
+	this._host = ENetSockets.ip2long(ipp[0]);
 	this._port = ipp[1]||0;
 	return this;
    }
    if(arguments.length==2){
 	if(typeof arguments[0] == 'string'){
-		this._host = ENetSocketsBackend.ip2long((arguments[0]));
+		this._host = ENetSockets.ip2long((arguments[0]));
 	}else{
 		this._host = arguments[0];
 	}
@@ -327,8 +327,8 @@ ENetAddress.prototype.port = function(){
   }
 };
 ENetAddress.prototype.address = function(){ 
-  if(this._pointer) return ENetSocketsBackend.long2ip(this.host(),'ENetAddress.prototype.address from pointer');
-  return ENetSocketsBackend.long2ip(this.host(),'ENetAddress.prototype.address from local');
+  if(this._pointer) return ENetSockets.long2ip(this.host(),'ENetAddress.prototype.address from pointer');
+  return ENetSockets.long2ip(this.host(),'ENetAddress.prototype.address from local');
 };
 
 function ENetPeer(pointer){
