@@ -1,13 +1,12 @@
 var ENET_HOST_SERVICE_INTERVAL = 30;//milli-seconds
 var ENET_PACKET_FLAG_RELIABLE = 1;
 
-module.exports.init = function(pf_func){
-    if(pf_func){
-        _jsapi_init(1);
-        ENetSockets.packetFilter.set(pf_func);
-    }else{
-        _jsapi_init(0);
-    }
+module.exports.init = function(func){
+    var funcPointer = Runtime.addFunction(function(host_ptr){
+           var addr = new ENetAddress(jsapi_.host_get_receivedAddress(host_ptr));
+           return func(addr.address(),addr.port());
+     });
+    _jsapi_init(funcPointer);
 };
 
 module.exports.Host = ENetHost;
@@ -226,12 +225,11 @@ function ENetPacket(pointer){
 	for(;i<end;i++,c++){
 		HEAPU8[i]=buf.readUInt8(c);
 	}
-    var callback_ptr = FUNCTION_TABLE.length;
-    FUNCTION_TABLE[callback_ptr] = function(packet){
+
+    var callback_ptr = Runtime.addFunction(function(packet){
         self.emit("free");
-        FUNCTION_TABLE[callback_ptr]=null;
-    };
-    FUNCTION_TABLE.push(0,0);
+        Runtime.removeFunction(callback_ptr);
+    });
     jsapi_.packet_set_free_callback(this._pointer,callback_ptr);
     events.EventEmitter.call(this);
 	return this;

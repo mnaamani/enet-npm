@@ -7,23 +7,10 @@ var jsapi_ = {};
 var enet_ = {};
 
 var Module = {};
-var ENetSockets = {};
 
 Module["preRun"]=[];
 
 Module['preRun'].push(function(){
-        ENetSockets.packetFilter = (function(){
-            var filterFunc;
-            return({
-              set: function(func){
-                filterFunc = func;
-              },
-              apply: function(address,port){
-                return filterFunc(address,port);
-              }
-            });
-        })();
-
         Module["jsapi"]={};
         Module["jsapi"]["enet_host_create_client"] = jsapi_.enet_host_create_client = cwrap('jsapi_enet_host_create_client', 'number',
             ['number','number','number','number']);
@@ -57,9 +44,4 @@ Module['preRun'].push(function(){
         Module["libenet"]["peer_disconnect"] = enet_.peer_disconnect = cwrap('enet_peer_disconnect','',['number','number']);
         Module["libenet"]["peer_disconnect_now"] = enet_.peer_disconnect_now = cwrap('enet_peer_disconnect_now','',['number','number']);
         Module["libenet"]["peer_disconnect_later"] = enet_.peer_disconnect_later = cwrap('enet_peer_disconnect_later','',['number','number']);
-
-        __packet_filter = function(host_ptr){
-           var addr = new ENetAddress(jsapi_.host_get_receivedAddress(host_ptr));
-           return ENetSockets.packetFilter.apply(addr.address(),addr.port());
-        }
 });

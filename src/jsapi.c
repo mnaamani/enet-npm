@@ -6,12 +6,8 @@
 
 #define MAXTOKENS_PER_TELEX 32
 
-int packet_filter(ENetHost* host){
-    return _packet_filter(host);
-}
-
-void jsapi_init(int filter){
-  if(filter){
+void jsapi_init(int (ENET_CALLBACK * packet_filter) (ENetHost* host)){
+  if(packet_filter){
 	ENetCallbacks callbacks = { NULL, NULL, NULL, packet_filter };
         enet_initialize_with_callbacks(ENET_VERSION, &callbacks);
  	return;
