@@ -13,8 +13,8 @@ module.exports.init = function(pf_func){
 module.exports.Host = ENetHost;
 module.exports.Address = ENetAddress;
 module.exports.Packet = ENetPacket;
-module.exports.inet_ip2long=ENetSockets.ip2long;
-module.exports.inet_long2ip=ENetSockets.long2ip;
+module.exports.inet_ip2long=ip2long;
+module.exports.inet_long2ip=long2ip;
 
 util.inherits(ENetHost, events.EventEmitter);
 util.inherits(ENetPacket, events.EventEmitter);
@@ -62,7 +62,7 @@ function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    self._event = new ENetEvent();//allocate memory for events - free it when we destroy the host
    self._pointer = pointer;
    var socketfd = jsapi_.host_get_socket(self._pointer);
-   var socket = self._socket = ENetSockets.getSocket(socketfd);
+   var socket = self._socket = FS.streams[socketfd].socket;
    if(socket._bound || socket.__receiving){
         setTimeout(function(){
             socket.setBroadcast(true);
@@ -296,13 +296,13 @@ function ENetAddress(){
    }
    if(arguments.length==1 && typeof arguments[0]=='string'){
 	var ipp =arguments[0].split(':');
-	this._host = ENetSockets.ip2long(ipp[0]);
+	this._host = ip2long(ipp[0]);
 	this._port = ipp[1]||0;
 	return this;
    }
    if(arguments.length==2){
 	if(typeof arguments[0] == 'string'){
-		this._host = ENetSockets.ip2long((arguments[0]));
+		this._host = ip2long((arguments[0]));
 	}else{
 		this._host = arguments[0];
 	}
@@ -327,8 +327,8 @@ ENetAddress.prototype.port = function(){
   }
 };
 ENetAddress.prototype.address = function(){ 
-  if(this._pointer) return ENetSockets.long2ip(this.host(),'ENetAddress.prototype.address from pointer');
-  return ENetSockets.long2ip(this.host(),'ENetAddress.prototype.address from local');
+  if(this._pointer) return long2ip(this.host(),'ENetAddress.prototype.address from pointer');
+  return long2ip(this.host(),'ENetAddress.prototype.address from local');
 };
 
 function ENetPeer(pointer){
@@ -439,70 +439,10 @@ ENetHost.prototype.createReadStream = function(peer,channel){
 
     return s;
 };
-
-/*
-    Queue.js - Created by Stephen Morley 
-    http://code.stephenmorley.org/ - released under the terms of
-    the CC0 1.0 Universal legal code:
-    http://creativecommons.org/publicdomain/zero/1.0/legalcode
-*/
-
-/* Creates a new queue. A queue is a first-in-first-out (FIFO) data structure -
- * items are added to the end of the queue and removed from the front.
- */
-function Queue(){
-
-  // initialise the queue and offset
-  var queue  = [];
-  var offset = 0;
-
-  /* Returns the length of the queue.
-   */
-  this.getLength = function(){
-    // return the length of the queue
-    return (queue.length - offset);
-  }
-
-  /* Returns true if the queue is empty, and false otherwise.
-   */
-  this.isEmpty = function(){
-    // return whether the queue is empty
-    return (queue.length == 0);
-  }
-
-  /* Enqueues the specified item. The parameter is:
-   *
-   * item - the item to enqueue
-   */
-  this.enqueue = function(item){
-    // enqueue the item
-    queue.push(item);
-  }
-
-  /* Dequeues an item and returns it. If the queue is empty then undefined is
-   * returned.
-   */
-  this.dequeue = function(){
-    // if the queue is empty, return undefined
-    if (queue.length == 0) return undefined;
-
-    // store the item at the front of the queue
-    var item = queue[offset];
-
-    // increment the offset and remove the free space if necessary
-    if (++ offset * 2 >= queue.length){
-      queue  = queue.slice(offset);
-      offset = 0;
-    }
-    // return the dequeued item
-    return item;
-  }
-
-  /* Returns the item at the front of the queue (without dequeuing it). If the
-   * queue is empty then undefined is returned.
-   */
-  this.peek = function(){
-    // return the item at the front of the queue
-    return (queue.length > 0 ? queue[offset] : undefined);
-  }
+function ip2long(ipstr){
+    var b = ipstr.split('.');
+    return (Number(b[0]) | (Number(b[1]) << 8) | (Number(b[2]) << 16) | (Number(b[3]) << 24)) >>> 0;
+}
+function long2ip(addr){
+    return (addr & 0xff) + '.' + ((addr >> 8) & 0xff) + '.' + ((addr >> 16) & 0xff) + '.' + ((addr >> 24) & 0xff);
 }

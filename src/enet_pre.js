@@ -7,6 +7,7 @@ var jsapi_ = {};
 var enet_ = {};
 
 var Module = {};
+var ENetSockets = {};
 
 Module["preRun"]=[];
 
