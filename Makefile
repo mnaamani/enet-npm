@@ -1,9 +1,9 @@
 EMCC=`./find-emcc.py`/emcc
-OPTIMISE= -O2 --closure 0 --llvm-opts 1 --minify 0
+OPTIMISE= -O2 --closure 1 -s ASM_JS=1 --llvm-opts 1
 ENET_SOURCE=./src/enet-1.3.5
 
 EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
-    '_init_enet_sockets_backend', \
+    '_jsapi_init', \
     '_enet_host_service', \
     '_enet_host_destroy', \
     '_enet_host_flush', \
@@ -36,6 +36,9 @@ EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
 
 module:
 	$(EMCC) src/jsapi.c $(ENET_SOURCE)/*.c -I$(ENET_SOURCE)/include \
-        --pre-js src/enet_pre.js --post-js src/enet_post.js -o lib/enet.js $(OPTIMISE) \
-        --js-library src/library_node_sockets.js \
-        -s TOTAL_MEMORY=1048576  -s TOTAL_STACK=409600 -s ALLOW_MEMORY_GROWTH=1 -s LINKABLE=1 $(EXPORTED_FUNCTIONS) -s ASM_JS=0
+        --pre-js src/enet_pre.js -o lib/enet_.js $(OPTIMISE) \
+        --js-library src/library_node_sockets.js --js-library src/library_inet.js \
+        -s TOTAL_MEMORY=1048576  -s TOTAL_STACK=409600 -s ALLOW_MEMORY_GROWTH=0 -s LINKABLE=1 $(EXPORTED_FUNCTIONS) \
+        -s RESERVED_FUNCTION_POINTERS=32
+	cat src/wrap_header.js lib/enet_.js src/wrap_footer.js src/bindings.js > lib/enet.js
+	rm lib/enet_.js

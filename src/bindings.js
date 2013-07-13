@@ -1,12 +1,21 @@
+var Buffer = require("buffer").Buffer;
+var events = require("events");
+var util = require("util");
+var Stream = require("stream");
+
+var ENETModule = moduleScope.Module;
+var jsapi_ = moduleScope.Module.jsapi;
+var enet_ = moduleScope.Module.libenet;
+
 var ENET_HOST_SERVICE_INTERVAL = 30;//milli-seconds
 var ENET_PACKET_FLAG_RELIABLE = 1;
 
 module.exports.init = function(func){
-    var funcPointer = Runtime.addFunction(function(host_ptr){
+    var funcPointer = ENETModule["Runtime_addFunction"](function(host_ptr){
            var addr = new ENetAddress(jsapi_.host_get_receivedAddress(host_ptr));
            return func(addr.address(),addr.port());
      });
-    _jsapi_init(funcPointer);
+    jsapi_.init(funcPointer);
 };
 
 module.exports.Host = ENetHost;
@@ -61,7 +70,7 @@ function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    self._event = new ENetEvent();//allocate memory for events - free it when we destroy the host
    self._pointer = pointer;
    var socketfd = jsapi_.host_get_socket(self._pointer);
-   var socket = self._socket = FS.streams[socketfd].socket;
+   var socket = self._socket = ENETModule["GetSocket"](socketfd);
    if(socket._bound || socket.__receiving){
         setTimeout(function(){
             socket.setBroadcast(true);
@@ -75,7 +84,6 @@ function ENetHost(address,maxpeers,maxchannels,bw_down,bw_up,host_type){
    }
 }
 
-ENetHost.prototype.__service = cwrap('enet_host_service','number',['number','number','number']);
 ENetHost.prototype.service = function(){
    var self = this;
    var peer;
@@ -83,7 +91,7 @@ ENetHost.prototype.service = function(){
 
    if(!self._pointer || !self._event) return;
   try{
-   var err = self.__service(self._pointer,self._event._pointer,0);
+   var err = enet_.host_service(self._pointer,self._event._pointer,0);
    while( err > 0){
 	switch(self._event.type()){
 		case 0:	//none
@@ -136,7 +144,7 @@ ENetHost.prototype.service = function(){
 			self._event.packet().destroy();
 			break;
 	}
-	err = self.__service(self._pointer,self._event._pointer,0);
+	err = enet_.host_service(self._pointer,self._event._pointer,0);
    }
   }catch(e){
    //console.log(e);
@@ -223,12 +231,12 @@ function ENetPacket(pointer){
         var end = begin + buf.length;
 	var c=0,i=begin;
 	for(;i<end;i++,c++){
-		HEAPU8[i]=buf.readUInt8(c);
+		ENETModule["HEAPU8"][i]=buf.readUInt8(c);
 	}
 
-    var callback_ptr = Runtime.addFunction(function(packet){
+    var callback_ptr = ENETModule["Runtime_addFunction"](function(packet){
         self.emit("free");
-        Runtime.removeFunction(callback_ptr);
+        ENETModule["Runtime_removeFunction"](callback_ptr);
     });
     jsapi_.packet_set_free_callback(this._pointer,callback_ptr);
     events.EventEmitter.call(this);
@@ -241,7 +249,7 @@ function ENetPacket(pointer){
 ENetPacket.prototype.data = function(){
 	var begin = jsapi_.packet_get_data(this._pointer);
 	var end = begin + jsapi_.packet_get_dataLength(this._pointer);
-	return new Buffer(HEAPU8.subarray(begin,end),"byte");
+	return new Buffer(ENETModule["HEAPU8"].subarray(begin,end),"byte");
 	//return HEAPU8.subarray(begin,end);
 };
 ENetPacket.prototype.dataLength = function(){
@@ -312,7 +320,7 @@ function ENetAddress(){
 ENetAddress.prototype.host = function(){
   if(this._pointer){
 	var hostptr = jsapi_.address_get_host(this._pointer);
-	return HEAPU32[hostptr>>2];
+	return ENETModule["HEAPU32"][hostptr>>2];
   }else{
 	return this._host;
   }
@@ -406,6 +414,7 @@ ENetHost.prototype.createWriteStream = function(peer,channel){
 
     return s;
 };
+
 ENetHost.prototype.createReadStream = function(peer,channel){
     var s = new Stream();
 
