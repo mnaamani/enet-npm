@@ -49,7 +49,14 @@ mergeInto(LibraryManager.library, {
 #endif
         assert(false);
     },
-
+    buffer2uint8array: function(buffer){
+      var arraybuffer = new ArrayBuffer(buffer.length);
+      var uint8Array = new Uint8Array(arraybuffer);
+      for(var i = 0; i < buffer.length; i++) {
+        uint8Array[i] = buffer["readUInt8"](i);//cannot index Buffer with [] if browserified..
+      }
+      return uint8Array;
+    },
 #if CHROME_SOCKETS
     ChromeNet: undefined,       /* use https://github.com/GoogleChrome/net-chromeify.git ? (Apache license)*/
     ChromeDgram: function(){
@@ -652,7 +659,7 @@ mergeInto(LibraryManager.library, {
 #if CHROME_SOCKETS
                     var buf = msg;
 #else
-                    var buf = new Uint8Array(msg);
+                    var buf = msg instanceof ArrayBuffer ? new Uint8Array(msg) : NodeSockets.buffer2uint8array(msg);
 #endif                    
                     buf.from= {
                         host: rinfo["address"],
