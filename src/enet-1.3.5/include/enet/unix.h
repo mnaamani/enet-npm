@@ -11,7 +11,6 @@
 #include <net/netinet/in.h>
 #include <net/arpa/inet.h>
 #include <unistd.h>
-#include "bits.h"
 
 typedef int ENetSocket;
 
