@@ -45,3 +45,4 @@ Module["preRun"].push(function(){
         Module["HEAPU8"]=HEAPU8;
         Module["HEAPU32"]=HEAPU32;
 });
+this["Module"]=Module;
