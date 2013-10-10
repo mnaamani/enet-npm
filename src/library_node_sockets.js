@@ -6,14 +6,14 @@ mergeInto(LibraryManager.library, {
   $NodeSockets__deps: ['__setErrNo', '$ERRNO_CODES'],
   $NodeSockets: {
     sockaddr_in_layout: Runtime.generateStructInfo([
-      ['i32', 'sin_family'],
+      ['i16', 'sin_family'],
       ['i16', 'sin_port'],
       ['i32', 'sin_addr'],
       ['i32', 'sin_zero'],
       ['i16', 'sin_zero_b'],
     ]),
     sockaddr_in6_layout: Runtime.generateStructInfo([
-      ['i32', 'sin6_family'],
+      ['i16', 'sin6_family'],
       ['i16', 'sin6_port'],
       ['i32', 'sin6_flowinfo'],
       ['b16', 'sin6_addr'],//<< struct in6_addr
@@ -235,8 +235,7 @@ mergeInto(LibraryManager.library, {
     socket__deps: ['$NodeSockets', '__setErrNo', '$ERRNO_CODES'],
     socket: function(family, type, protocol) {
         var fd;
-        if(!(family == {{{ cDefine('AF_INET') }}} || family == {{{ cDefine('PF_INET') }}} || 
-             family == {{{ cDefine('AF_INET6') }}} || family == {{{ cDefine('PF_INET6') }}}))
+        if(!(family == {{{ cDefine('AF_INET') }}} || family == {{{ cDefine('AF_INET6') }}}))
         {
             ___setErrNo(ERRNO_CODES.EAFNOSUPPORT);
             return -1;
@@ -753,13 +752,13 @@ mergeInto(LibraryManager.library, {
                 case NodeSockets.sockaddr_in_layout.__size__:
                     setValue(addr + NodeSockets.sockaddr_in_layout.sin_addr, NodeSockets.inet_aton_raw(conn.host), 'i32');
                     setValue(addr + NodeSockets.sockaddr_in_layout.sin_port, conn.port, 'i16');
-                    setValue(addr + NodeSockets.sockaddr_in_layout.sin_family, {{{ cDefine('AF_INET') }}}, 'i32');
+                    setValue(addr + NodeSockets.sockaddr_in_layout.sin_family, {{{ cDefine('AF_INET') }}}, 'i16');
                     setValue(addrlen, NodeSockets.sockaddr_in_layout.__size__, 'i32');
                     break;
                 case NodeSockets.sockaddr_in6_layout.__size__:
                     _inet_pton6_raw(conn.host,addr + NodeSockets.sockaddr_in6_layout.sin6_addr);
                     setValue(addr + NodeSockets.sockaddr_in6_layout.sin6_port, conn.port, 'i16');
-                    setValue(addr + NodeSockets.sockaddr_in6_layout.sin6_family, {{{ cDefine('AF_INET6') }}}, 'i32');
+                    setValue(addr + NodeSockets.sockaddr_in6_layout.sin6_family, {{{ cDefine('AF_INET6') }}}, 'i16');
                     setValue(addrlen, NodeSockets.sockaddr_in6_layout.__size__, 'i32');
                     break;
             }
