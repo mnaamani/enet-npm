@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <net/netinet/in.h>
-#include <net/arpa/inet.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 
 typedef int ENetSocket;
