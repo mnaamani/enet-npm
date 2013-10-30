@@ -5,29 +5,6 @@
 mergeInto(LibraryManager.library, {
   $NodeSockets__deps: ['__setErrNo', '$ERRNO_CODES'],
   $NodeSockets: {
-    sockaddr_in_layout: Runtime.generateStructInfo([
-      ['i16', 'sin_family'],
-      ['i16', 'sin_port'],
-      ['i32', 'sin_addr'],
-      ['i32', 'sin_zero'],
-      ['i16', 'sin_zero_b'],
-    ]),
-    sockaddr_in6_layout: Runtime.generateStructInfo([
-      ['i16', 'sin6_family'],
-      ['i16', 'sin6_port'],
-      ['i32', 'sin6_flowinfo'],
-      ['b16', 'sin6_addr'],//<< struct in6_addr
-      ['i32', 'sin6_scopeid'],
-    ]),
-    msghdr_layout: Runtime.generateStructInfo([
-      ['*', 'msg_name'],
-      ['i32', 'msg_namelen'],
-      ['*', 'msg_iov'],
-      ['i32', 'msg_iovlen'],
-      ['*', 'msg_control'],
-      ['i32', 'msg_controllen'],
-      ['i32', 'msg_flags'],
-    ]),
     inet_aton_raw: function(str) {
         var b = str.split(".");
         return (Number(b[0]) | (Number(b[1]) << 8) | (Number(b[2]) << 16) | (Number(b[3]) << 24)) >>> 0;
@@ -253,7 +230,7 @@ mergeInto(LibraryManager.library, {
         try{
          if(stream){
           fd = FS.createStream({
-            addrlen : v6 ? NodeSockets.sockaddr_in6_layout.__size__ : NodeSockets.sockaddr_in_layout.__size__ ,
+            addrlen : v6 ? {{{ C_STRUCTS.sockaddr_in6.__size__ }}} : {{{ C_STRUCTS.sockaddr_in.__size__ }}} ,
             connected: false,
             stream: true,
             socket: true, //real socket will be created when bind() or connect() is called 
@@ -262,7 +239,7 @@ mergeInto(LibraryManager.library, {
           }).fd;
          }else if(dgram){
           fd = FS.createStream({
-            addrlen : v6 ? NodeSockets.sockaddr_in6_layout.__size__ : NodeSockets.sockaddr_in_layout.__size__ ,
+            addrlen : v6 ? {{{ C_STRUCTS.sockaddr_in6.__size__ }}} : {{{ C_STRUCTS.sockaddr_in.__size__ }}} ,
             connected: false,
             stream: false,
             dgram: true,
@@ -320,14 +297,14 @@ mergeInto(LibraryManager.library, {
 
         assert( info.addrlen === addrlen );
         switch(addrlen){
-            case NodeSockets.sockaddr_in_layout.__size__:
-                info.addr = getValue(addr + NodeSockets.sockaddr_in_layout.sin_addr, 'i32');
-                info.port = _htons(getValue(addr + NodeSockets.sockaddr_in_layout.sin_port, 'i16'));
+            case {{{ C_STRUCTS.sockaddr_in.__size__ }}}:
+                info.addr = {{{ makeGetValue('addr', C_STRUCTS.sockaddr_in.sin_addr.s_addr, 'i32') }}};
+                info.port = _htons( {{{ makeGetValue('addr', C_STRUCTS.sockaddr_in.sin_port, 'i16') }}});
                 info.host = NodeSockets.inet_ntoa_raw(info.addr);
                 break;
-            case NodeSockets.sockaddr_in6_layout.__size__:
-                info.port = _htons(getValue(addr + NodeSockets.sockaddr_in6_layout.sin6_port, 'i16'));
-                info.host = _inet_ntop6_raw(addr+NodeSockets.sockaddr_in6_layout.sin6_addr);
+            case {{{ C_STRUCTS.sockaddr_in6.__size__ }}}:
+                info.port = _htons( {{{ makeGetValue('addr', C_STRUCTS.sockaddr_in6.sin6_port, 'i16')}}} );
+                info.host = _inet_ntop6_raw(addr + {{{ C_STRUCTS.sockaddr_in6.sin6_addr.__in6_union.__s6_addr }}} );
                 break;
         }
         if(!info.stream) return 0;
@@ -422,14 +399,14 @@ mergeInto(LibraryManager.library, {
         }
 
         // if we are not connected, use the address info in the message
-        var name = {{{ makeGetValue('msg', 'NodeSockets.msghdr_layout.msg_name', '*') }}};
-        var namelen = {{{ makeGetValue('msg', 'NodeSockets.msghdr_layout.msg_namelen', 'i32') }}};
+        var name = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_name, '*') }}};
+        var namelen = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_namelen, 'i32') }}};
         if (!info.connected) {
           assert(name, 'sendmsg on non-connected socket, and no name/address in the message');
           if(info.stream) _connect(fd, name, namelen);
         }
-        var iov = {{{ makeGetValue('msg', 'NodeSockets.msghdr_layout.msg_iov', 'i8*') }}};
-        var num = {{{ makeGetValue('msg', 'NodeSockets.msghdr_layout.msg_iovlen', 'i32') }}};
+        var iov = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_iov, 'i8*') }}};
+        var num = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_iovlen, 'i32') }}};
 #if SOCKET_DEBUG
           Module.print('sendmsg vecs: ' + num);
 #endif
@@ -452,14 +429,14 @@ mergeInto(LibraryManager.library, {
         assert( info.addrlen === namelen );
         var addr,port,host;
         switch(namelen){
-            case NodeSockets.sockaddr_in_layout.__size__:
-                addr = getValue(name + NodeSockets.sockaddr_in_layout.sin_addr, 'i32');
-                port = _htons(getValue(name + NodeSockets.sockaddr_in_layout.sin_port, 'i16'));
+            case {{{ C_STRUCTS.sockaddr_in.__size__ }}}:
+                addr = getValue(name + {{{ C_STRUCTS.sockaddr_in.sin_addr.s_addr }}}, 'i32');
+                port = _htons(getValue(name + {{{ C_STRUCTS.sockaddr_in.sin_port }}}, 'i16'));
                 host = NodeSockets.inet_ntoa_raw(addr);
                 break;
-            case NodeSockets.sockaddr_in6_layout.__size__:
-                port = _htons(getValue(name + NodeSockets.sockaddr_in6_layout.sin6_port, 'i16'));
-                host = _inet_ntop6_raw(name+NodeSockets.sockaddr_in6_layout.sin6_addr);
+            case {{{ C_STRUCTS.sockaddr_in6.__size__ }}}:
+                port = _htons( {{{ makeGetValue('name', C_STRUCTS.sockaddr_in6.sin6_port, 'i16') }}});
+                host = _inet_ntop6_raw(name + {{{ C_STRUCTS.sockaddr_in6.sin6_addr.__in6_union.__s6_addr }}});
                 break;
         }
         if(info.dgram && !info.bound) _bind(fd);
@@ -481,35 +458,35 @@ mergeInto(LibraryManager.library, {
 #if SOCKET_DEBUG
         Module.print('recvmsg bytes: ' + bytes);
 #endif
-        var name = {{{ makeGetValue('msg', 'NodeSockets.msghdr_layout.msg_name', '*') }}};
-        var namelen = {{{ makeGetValue('msg', 'NodeSockets.msghdr_layout.msg_namelen', 'i32') }}};
+        var name = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_name, '*') }}};
+        var namelen = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_namelen, 'i32') }}};
         assert( info.addrlen === namelen );
         // write source - assuming a dgram..
         switch(namelen){
-            case NodeSockets.sockaddr_in_layout.__size__:
+            case {{{ C_STRUCTS.sockaddr_in.__size__ }}}:
                 if(info.connected){
-                    {{{ makeSetValue('name', 'NodeSockets.sockaddr_in_layout.sin_addr', 'info.addr', 'i32') }}};
-                    {{{ makeSetValue('name', 'NodeSockets.sockaddr_in_layout.sin_port', '_htons(info.port)', 'i16') }}};
+                    {{{ makeSetValue('name', C_STRUCTS.sockaddr_in.sin_addr.s_addr, 'info.addr', 'i32') }}};
+                    {{{ makeSetValue('name', C_STRUCTS.sockaddr_in.sin_port, '_htons(info.port)', 'i16') }}};
                 }else{
-                    {{{ makeSetValue('name', 'NodeSockets.sockaddr_in_layout.sin_addr', 'NodeSockets.inet_aton_raw(buffer.from.host)', 'i32') }}};
-                    {{{ makeSetValue('name', 'NodeSockets.sockaddr_in_layout.sin_port', '_htons(buffer.from.port)', 'i16') }}};
+                    {{{ makeSetValue('name', C_STRUCTS.sockaddr_in.sin_addr.s_addr, 'NodeSockets.inet_aton_raw(buffer.from.host)', 'i32') }}};
+                    {{{ makeSetValue('name', C_STRUCTS.sockaddr_in.sin_port, '_htons(buffer.from.port)', 'i16') }}};
                 }
                 break;
-            case NodeSockets.sockaddr_in6_layout.__size__:
+            case {{{ C_STRUCTS.sockaddr_in6.__size__ }}}:
                 if(info.connected){
-                    _inet_pton6_raw(info.host,name+NodeSockets.sockaddr_in6_layout.sin6_addr);
-                    {{{ makeSetValue('name', 'NodeSockets.sockaddr_in6_layout.sin6_port', '_htons(info.port)', 'i16') }}};
+                    _inet_pton6_raw(info.host,name + {{{ C_STRUCTS.sockaddr_in6.sin6_addr.__in6_union.__s6_addr }}});
+                    {{{ makeSetValue('name', C_STRUCTS.sockaddr_in6.sin6_port, '_htons(info.port)', 'i16') }}};
                 }else{
-                    _inet_pton6_raw(buffer.from.host,name+NodeSockets.sockaddr_in6_layout.sin6_addr);
-                    {{{ makeSetValue('name', 'NodeSockets.sockaddr_in6_layout.sin6_port', '_htons(buffer.from.port)', 'i16') }}};
+                    _inet_pton6_raw(buffer.from.host,name + {{{ C_STRUCTS.sockaddr_in6.sin6_addr.__in6_union.__s6_addr }}});
+                    {{{ makeSetValue('name', C_STRUCTS.sockaddr_in6.sin6_port, '_htons(buffer.from.port)', 'i16') }}};
                 }
                 break;
         }
         
         // write data
         var ret = bytes;
-        var iov = {{{ makeGetValue('msg', 'NodeSockets.msghdr_layout.msg_iov', 'i8*') }}};
-        var num = {{{ makeGetValue('msg', 'NodeSockets.msghdr_layout.msg_iovlen', 'i32') }}};
+        var iov = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_iov, 'i8*') }}};
+        var num = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_iovlen, 'i32') }}};
         var bufferPos = 0;
         for (var i = 0; i < num && bytes > 0; i++) {
           var currNum = {{{ makeGetValue('iov', '8*i + 4', 'i32') }}};
@@ -553,13 +530,13 @@ mergeInto(LibraryManager.library, {
         if(addr){
             assert( info.addrlen === addrlen );
             switch(addrlen){
-                case NodeSockets.sockaddr_in_layout.__size__:
-                    {{{ makeSetValue('addr', 'NodeSockets.sockaddr_in_layout.sin_addr', 'NodeSockets.inet_aton_raw(buffer.from.host)', 'i32') }}};
-                    {{{ makeSetValue('addr', 'NodeSockets.sockaddr_in_layout.sin_port', '_htons(buffer.from.port)', 'i16') }}};
+                case {{{ C_STRUCTS.sockaddr_in.__size__ }}}:
+                    {{{ makeSetValue('addr', C_STRUCTS.sockaddr_in.sin_addr.s_addr, 'NodeSockets.inet_aton_raw(buffer.from.host)', 'i32') }}};
+                    {{{ makeSetValue('addr', C_STRUCTS.sockaddr_in.sin_port, '_htons(buffer.from.port)', 'i16') }}};
                     break;
-                case NodeSockets.sockaddr_in6_layout.__size__:
-                    _inet_pton6_raw(buffer.from.host,addr+NodeSockets.sockaddr_in6_layout.sin6_addr);
-                    {{{ makeSetValue('addr', 'NodeSockets.sockaddr_in_layout.sin6_port', '_htons(buffer.from.port)', 'i16') }}};
+                case {{{ C_STRUCTS.sockaddr_in6.__size__ }}}:
+                    _inet_pton6_raw(buffer.from.host,addr+ {{{ C_STRUCTS.sockaddr_in6.sin6_addr.__in6_union.__s6_addr }}});
+                    {{{ makeSetValue('addr', C_STRUCTS.sockaddr_in6.sin6_port, '_htons(buffer.from.port)', 'i16') }}};
                     break;
             }
         }
@@ -635,14 +612,14 @@ mergeInto(LibraryManager.library, {
           if(addr){
             assert(info.addrlen === addrlen);
             switch(addrlen){
-                case NodeSockets.sockaddr_in_layout.__size__:
-                    info.local_addr = getValue(addr + NodeSockets.sockaddr_in_layout.sin_addr, 'i32');
-                    info.local_port = _htons(getValue(addr + NodeSockets.sockaddr_in_layout.sin_port, 'i16'));
+                case {{{ C_STRUCTS.sockaddr_in.__size__ }}}:
+                    info.local_addr = {{{ makeGetValue('addr',C_STRUCTS.sockaddr_in.sin_addr.s_addr, 'i32') }}};
+                    info.local_port = _htons( {{{ makeGetValue('addr', C_STRUCTS.sockaddr_in.sin_port, 'i16') }}} );
                     info.local_host = NodeSockets.inet_ntoa_raw(info.local_addr);
                     break;
-                case NodeSockets.sockaddr_in6_layout.__size__:
-                    info.local_port = _htons(getValue(addr + NodeSockets.sockaddr_in6_layout.sin6_port, 'i16'));
-                    info.local_host = _inet_ntop6_raw(addr+NodeSockets.sockaddr_in6_layout.sin6_addr);
+                case {{{ C_STRUCTS.sockaddr_in6.__size__ }}}:
+                    info.local_port = _htons( {{{makeGetValue('addr', C_STRUCTS.sockaddr_in6.sin6_port, 'i16') }}} );
+                    info.local_host = _inet_ntop6_raw(addr + {{{ C_STRUCTS.sockaddr_in6.sin6_addr.__in6_union.__s6_addr }}} );
                     break;
             }
           }
@@ -749,17 +726,17 @@ mergeInto(LibraryManager.library, {
                 
         if (addr) {
             switch(info.addrlen){
-                case NodeSockets.sockaddr_in_layout.__size__:
-                    setValue(addr + NodeSockets.sockaddr_in_layout.sin_addr, NodeSockets.inet_aton_raw(conn.host), 'i32');
-                    setValue(addr + NodeSockets.sockaddr_in_layout.sin_port, conn.port, 'i16');
-                    setValue(addr + NodeSockets.sockaddr_in_layout.sin_family, {{{ cDefine('AF_INET') }}}, 'i16');
-                    setValue(addrlen, NodeSockets.sockaddr_in_layout.__size__, 'i32');
+                case {{{ C_STRUCTS.sockaddr_in.__size__ }}}:
+                    setValue(addr + {{{ C_STRUCTS.sockaddr_in.sin_addr.s_addr }}}, NodeSockets.inet_aton_raw(conn.host), 'i32');
+                    setValue(addr + {{{ C_STRUCTS.sockaddr_in.sin_port }}}, conn.port, 'i16');
+                    setValue(addr + {{{ C_STRUCTS.sockaddr_in.sin_family }}}, {{{ cDefine('AF_INET') }}}, 'i16');
+                    setValue(addrlen, {{{ C_STRUCTS.sockaddr_in.__size__ }}}, 'i32');
                     break;
-                case NodeSockets.sockaddr_in6_layout.__size__:
-                    _inet_pton6_raw(conn.host,addr + NodeSockets.sockaddr_in6_layout.sin6_addr);
-                    setValue(addr + NodeSockets.sockaddr_in6_layout.sin6_port, conn.port, 'i16');
-                    setValue(addr + NodeSockets.sockaddr_in6_layout.sin6_family, {{{ cDefine('AF_INET6') }}}, 'i16');
-                    setValue(addrlen, NodeSockets.sockaddr_in6_layout.__size__, 'i32');
+                case {{{ C_STRUCTS.sockaddr_in6.__size__ }}}:
+                    _inet_pton6_raw(conn.host,addr + {{{ C_STRUCTS.sockaddr_in6.sin6_addr.__in6_union.__s6_addr }}});
+                    setValue(addr + {{{ C_STRUCTS.sockaddr_in6.sin6_port }}}, conn.port, 'i16');
+                    setValue(addr + {{{ C_STRUCTS.sockaddr_in6.sin6_family }}}, {{{ cDefine('AF_INET6') }}}, 'i16');
+                    setValue(addrlen, {{{ C_STRUCTS.sockaddr_in6.__size__ }}}, 'i32');
                     break;
             }
         }
