@@ -379,37 +379,22 @@ ENetPeer.prototype.address = function(){
 //turn a channel with peer into a node writeable Stream
 // ref: https://github.com/substack/stream-handbook
 ENetHost.prototype.createWriteStream = function(peer,channel){
-    var s = new Stream();
-
-    s.readable = false;
-    s.writeable = true;
+    var s = new Stream.Writable();
 
     peer.on("disconnect",function(data){
-            if(s.writeable) s.destroy();
             s.emit("end");
     });
 
-    s.write = function(buf){
+    s._write = function(buf,enc,next){
         if(!buf.length) return;
-        if(!s.writeable) return;
         var packet = new ENetPacket(buf,ENET_PACKET_FLAG_RELIABLE);
         peer.send(channel, packet,function(err){
             if(err) {
-                s.destroy();
+                next(err);
                 return;
             }
-            s.emit("drain");
+            next();
         });
-        return false;
-    };
-
-    s.end = function(buf){
-        if(arguments.length) s.write(buf);
-        s.destroy();
-    };
-    
-    s.destroy = function(){
-        s.writeable = false;
     };
 
     return s;
