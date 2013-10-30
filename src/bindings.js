@@ -416,33 +416,19 @@ ENetHost.prototype.createWriteStream = function(peer,channel){
 };
 
 ENetHost.prototype.createReadStream = function(peer,channel){
-    var s = new Stream();
-
-    s.readable = true;
-    s.writeable = false;
-
-    var paused = false;
+    var s = new Stream.Readable();
 
     peer.on("disconnect",function(data){
-            s.readable = false;
             s.emit("end");
     });
 
     peer.on("message",function(_packet,_channel){
         if(channel === _channel ){
-            if(!paused) s.emit("data",_packet.data());
-                //else ... queue incoming packets
+            s.push(_packet.data());
         }
     });
 
-    //todo - proper backpressure implementation
-    s.pause = function(){
-        //paused = true;
-    }
-    s.resume = function(){
-        //de-queue packets
-        //paused = false;
-    }
+    s._read = function(size){};
 
     return s;
 };
