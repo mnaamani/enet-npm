@@ -1,6 +1,6 @@
 var enet = require("../lib/enet");
 
-var s_addr = new enet.Address("255.255.255.255",6666);
+var s_addr = new enet.Address("127.0.0.1",6666);
 
 var C = enet.createClient();
 
