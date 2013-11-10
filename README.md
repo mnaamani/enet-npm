@@ -1,170 +1,45 @@
-# [ENet](http://enet.bespin.org/) Networking Library cross compiled to javascript
+### enet: emscripten compiled [enet networking library](http://enet.bespin.org/)
 
-## Installation
+ENet's purpose is to provide a relatively thin, simple and robust network communication
+layer on top of UDP (User Datagram Protocol). The primary feature it provides is optional
+reliable, in-order delivery of packets.
+
+#### npm package
+
+enet is published in the [npm registry](https://npmjs.org/package/enet), to install it:
 
     npm install enet
 
+#### Documentation
 
-## Quick Tutorial
+[Quick Tutorial](https://github.com/mnaamani/enet-npm/blob/master/Tutorial.md)
 
-The Tutorial tries to parallel the [native C library tutorial](http://enet.bespin.org/Tutorial.html)
+#### License
 
-### Initialisation
+enet npm module is written by Mokhtar Naamani <mokhtar.naamani@gmail.com>
+and is licensed under the [MIT
+license](http://opensource.org/licenses/MIT):
 
-    var enet = require("enet");
+> Copyright &copy; 2013 Mokhtar Naamani.
+>
+> Permission is hereby granted, free of charge, to any person
+> obtaining a copy of this software and associated documentation files
+> (the "Software"), to deal in the Software without restriction,
+> including without limitation the rights to use, copy, modify, merge,
+> publish, distribute, sublicense, and/or sell copies of the Software,
+> and to permit persons to whom the Software is furnished to do so,
+> subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be
+> included in all copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+> EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+> MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+> NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+> BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+> ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+> CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
 
-optionally initialise enet with a packet-filtering function,
-
-    enet.init(filter);
-    
-    function filter(ipaddress /*String*/, port /*Number*/){
-      if(ipaddress === '192.168.0.22'){
-        return 0; //value of 0 will drop the packet
-      }
-      return 1; //value of 1 will pass the packet
-    }
-
-### Creating an ENet server
-
-Specify address and port to listen on,
-
-    var addr = new enet.Address("0.0.0.0", /* ANY ADDRESS */
-                                 7777      /* UDP Port 7777 */);
-    
-Create the server (ENetHost),
-
-    var server = enet.createServer({
-        address: addr, /* the enet.Address to bind the server host to */
-        peers:32, /* allow up to 32 clients and/or outgoing connections */
-        channels:2, /* allow up to 2 channels to be used, 0 and 1 */
-        down:0, /* assume any amount of incoming bandwidth */
-        up:0 /* assume any amount of outgoing bandwidth */
-    });
-                              
-An exception will be thrown if an error occured creating the host.
-
-Setup some event listeners,
-
-    server.on("ready",function(ip,port){
-      console.log("socket bound to port",port);
-    });
-    
-    server.on("connect",function(peer,data){
-        //incoming connection peer connection
-        peer.on("message",function(packet,channel){
-            console.log("received packet contents:",packet.data());
-        });
-    });
-    
-Start polling the host for events at 50ms intervals, (default is 30ms if not specified)
-
-    server.start(50);
-
-When done with a host, the host may be destroyed with the destroy() method.
-All connected peers to the host will be reset, and the resources used by the host will be freed.
-
-    server.destroy();
-     
-###Host events
-
-**Event "ready"**
-
-    function(ip /*String*/, port /*Number*/){}
-    
-For a server host, when socket is bound to ip address and port.
-For a client host, when socket is bound after a connection is initiated.
-    
-    
-**Event "connect"**
-
-    function(peer /*enet.Peer*/, data /*Number*/, outgoing /*Boolean*/){}
-
-Peer connection established, outgoing 'true' if we initiated connection. data is optional connect data sent by remote peer
-for an incoming connection, undefined otherwise.
-    
-    
-**Event: "message"**
-
-    function(peer /*enet.Peer*/,packet /*enet.Packet*/,channel_id /*Number*/){}
-    
-An enet packet was received on channel number channel_id, from enet peer.
-    
-    
-**Event: "telex"**
-    
-    function(buffer /*Buffer*/,source){}
-    
-A raw JSON UDP packet (telehash telex) was received represented by a Buffer(),
-source is an object with *address* and *port* properties (source of udp packet)
-
-### Peer events
-
-**Event: "connect"**
-
-Connection to remote host established.
-
-**Event: "message"**
-
-    function(packet /*enet.Packet*/,channel_id /*Number*/){}
-
-**Event: "disconnect"**
-
-    function(data /*Number*/){}
-    
-Peer disconnected or connection lost, data is optional data sent by remote peer when disconnecting.
-    
-
-### Creating an ENet client
-
-Create the host,
-
-    var client = enet.createClient({
-        peers: 1, /* only allow 1 outgoing connection */
-        channels: 2, /* allow up to 2 channels to be used, 0 and 1 */
-        down: 57600 / 8, /* 56K modem with 56 Kbps downstream bandwidth */
-        up: 14400 / 8 /* 56K modem with 14 Kbps upstream bandwidth */
-    });
-                              
-    client.start();
-    
-### Connecting to an ENet host
-    /* connect to server 192.168.1.55:7777 */
-    var server_addr = new enet.Address("192.168.1.55",7777);
- 
-    /* Initiate the connection, allocating the two channels 0 and 1. */
-    var peer = client.connect(server_addr,
-                   2, /* channels */
-                   1337, /* data to send, (received in 'connect' event at server) */
-                   function(err,peer){ /* on connect callback function */
-                      if(err){
-                        console.error(err);//either connect timeout or maximum peers exceeded
-                        return;
-                      }
-                      //connection to the remote host succeeded
-                      peer.ping();
-                   });
-                   
-    //connect event can also be handled with an event handler
-    peer.on("connect",function(){
-        //connection to the remote host succeeded
-        peer.ping();
-    });
-    
-### Sending a packet to an ENet peer
-    var packet = new enet.Packet( new Buffer("hello, world"),enet.Packet.FLAG_RELIABLE);
-    
-    peer.send(0 /*channel*/, packet, function(err){
-        //callback when packet is sent 'err' will be 'undefined'
-        //If error occurs trying to queue the packet err be an instance of Error()
-    });
-
-
-### Disconnecting an ENet peer
-
-    peer.disconnect(999); /*send 999 as data with disconnect message*/
-or
-
-    peer.reset();
-
-
-
+enet is Copyright (c) 2002-2013 [Lee Salzman](http://enet.bespin.org/License.html)
