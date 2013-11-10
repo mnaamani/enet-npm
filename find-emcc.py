@@ -1,5 +1,4 @@
 #!/usr/bin/python
 import os
-execfile(os.path.expanduser("~/.emscripten"))
-print EMSCRIPTEN_ROOT
-
+exec(open(os.path.expanduser("~/.emscripten")).read())
+print(EMSCRIPTEN_ROOT)
