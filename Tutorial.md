@@ -159,5 +159,23 @@ Peer disconnected or connection lost, `data` is optional data sent by remote pee
 
     peer.disconnect(999); /*send 999 as data with disconnect message*/
 or
-
     peer.reset();
+
+### Streams
+
+To communicate with a peer using the streams API we can turn a channel into a readable stream and writeable stream.
+
+For example use createReadStream method to create a readable stream:
+
+    var stream = peer.createReadStream(0);
+    stream.pipe(process.stdout);
+
+will pipe the data coming in on channel 0 with peer to stdout.
+
+A writeable stream can be created using createWriteStream method of peer:
+
+    var file = fs.createReadStream("data.txt");
+    var stream = peer.createWriteStream(2);
+    file.pipe(stream);
+
+will send the contents of data.txt file to the peer on channel 2

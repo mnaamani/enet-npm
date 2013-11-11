@@ -17,7 +17,7 @@ server.on("connect",function(peer,data){
         peer.disconnectLater();
     });
     
-    file.pipe(server.createWriteStream(peer,0));   
+    file.pipe(peer.createWriteStream(0));   
 });
 
 server.start(10);

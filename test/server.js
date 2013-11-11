@@ -14,9 +14,8 @@ server.on("ready",function(ip,port){
 
 server.on("connect",function(peer,data){
     console.log("peer connected");
-    var s=server.createWriteStream(peer,0);
-    s.write("hello I'm the server!");    
-    server.createReadStream(peer,0).pipe(process.stdout);
+    peer.createWriteStream(peer,0).write("hello I'm the server!");    
+    peer.createReadStream(0).pipe(process.stdout);
     setTimeout(function(){
        peer.disconnect();
     },2000);

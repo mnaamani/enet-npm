@@ -378,7 +378,8 @@ ENetPeer.prototype.address = function(){
 
 //turn a channel with peer into a node writeable Stream
 // ref: https://github.com/substack/stream-handbook
-ENetHost.prototype.createWriteStream = function(peer,channel){
+ENetPeer.prototype.createWriteStream = function(channel){
+    var peer = this;
     var s = new Stream.Writable();
 
     peer.on("disconnect",function(data){
@@ -400,7 +401,8 @@ ENetHost.prototype.createWriteStream = function(peer,channel){
     return s;
 };
 
-ENetHost.prototype.createReadStream = function(peer,channel){
+ENetPeer.prototype.createReadStream = function(channel){
+    var peer = this;
     var s = new Stream.Readable();
 
     peer.on("disconnect",function(data){
