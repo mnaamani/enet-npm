@@ -13,7 +13,7 @@ Module["preRun"].push(function(){
         Module["jsapi"]["packet_get_data"] = cwrap("jsapi_packet_get_data","number",["number"]);
         Module["jsapi"]["packet_set_free_callback"] = cwrap("jsapi_packet_set_free_callback","",["number","number"]);
         Module["jsapi"]["packet_get_dataLength"] = cwrap("jsapi_packet_get_dataLength","number",["number"]);
-        Module["jsapi"]["event_new"] = cwrap('jsapi_event_new','number');
+        Module["jsapi"]["event_new"] = cwrap('jsapi_event_new','number',[]);
         Module["jsapi"]["event_free"] = cwrap('jsapi_event_free','',['number']);
         Module["jsapi"]["event_get_type"] = cwrap('jsapi_event_get_type','number',['number']);
         Module["jsapi"]["event_get_peer"] =cwrap('jsapi_event_get_peer','number',['number']);
