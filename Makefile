@@ -1,6 +1,6 @@
 EMCC=`./find-emcc.py`/emcc
 #closure generates code which uses eval() - disabled for chrome-ext
-OPTIMISE= -O2 --closure 0 -s ASM_JS=1 --llvm-opts 1
+OPTIMISE= -O2 --closure 0 -s ASM_JS=1 --llvm-opts 1 --memory-init-file 0
 ENET_SOURCE=./src/enet-1.3.5
 
 EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
