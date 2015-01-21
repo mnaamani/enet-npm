@@ -49,7 +49,7 @@ function createHost(arg, callback, host_type) {
 			}
 		});
 
-		host.start();
+		if (host_type === "client") host.start();
 
 		if (host_type === "client" || socket._bound || socket.__receiving) {
 			setTimeout(function () {
@@ -210,7 +210,6 @@ ENetHost.prototype.destroy = function () {
 	delete self._socket;
 	delete self.connectedPeers;
 	self.emit("destroy");
-	self.removeAllListerners();
 };
 ENetHost.prototype.receivedAddress = function () {
 	var ptr = jsapi_.host_get_receivedAddress(this._pointer);
