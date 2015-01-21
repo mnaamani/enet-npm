@@ -118,7 +118,8 @@ function ENetHost(address, maxpeers, maxchannels, bw_down, bw_up, host_type) {
 		pointer = jsapi_.enet_host_create_client(maxpeers || 128, maxchannels || 5, bw_down || 0, bw_up || 0);
 
 	} else { //default is a server
-		pointer = jsapi_.enet_host_create(address.host(), address.port(), maxpeers || 128, maxchannels || 5, bw_down || 0,
+		pointer = jsapi_.enet_host_create(address.host(), address.port(), maxpeers || 128, maxchannels || 5,
+			bw_down || 0,
 			bw_up || 0);
 	}
 
@@ -130,6 +131,14 @@ function ENetHost(address, maxpeers, maxchannels, bw_down, bw_up, host_type) {
 	var socketfd = jsapi_.host_get_socket(self._pointer);
 	self._socket = ENETModule["GetSocket"](socketfd);
 }
+
+ENetHost.prototype.isOffline = function () {
+	return (typeof this._pointer === "undefined" || this._pointer === 0);
+};
+
+ENetHost.prototype.isOnline = function () {
+	return (this.isOffline() === false);
+};
 
 ENetHost.prototype.service = function () {
 	var self = this;
@@ -166,8 +175,9 @@ ENetHost.prototype.service = function () {
 			case 2: //disconnect
 				peer = self.connectedPeers[self._event.peerPtr()];
 				if (peer) {
+					delete self.connectedPeers[self._event.peerPtr()];
+					peer._pointer = 0;
 					peer.emit("disconnect", self._event.data());
-					delete self.connectedPeers[peer._pointer];
 				}
 				break;
 			case 3: //receive
@@ -201,32 +211,54 @@ ENetHost.prototype.service = function () {
 
 ENetHost.prototype.destroy = function () {
 	var self = this;
-	self.stop();
+	var peer, peer_ptr;
+	if (self._io_loop) {
+		clearInterval(self._io_loop);
+	}
+	if (typeof self._pointer === 'undefined' || self._pointer === 0) return;
+
+	for (peer_ptr in self.connectedPeers) {
+		peer = self.connectedPeers[peer_ptr];
+		if (peer._pointer !== 0) {
+			enet_.peer_disconnect_now(peer_ptr, 0);
+			peer._pointer = 0;
+			peer.emit("disconnect", self._event.data());
+		}
+	}
+	delete self.connectedPeers;
+	self.service(); //send out all disconnect commands
+
 	if (self._event) self._event.free();
 	if (this._pointer) enet_.host_destroy(this._pointer);
 	delete self._pointer;
 	delete self._event;
 	delete self._io_loop;
 	delete self._socket;
-	delete self.connectedPeers;
 	self.emit("destroy");
 };
+
 ENetHost.prototype.receivedAddress = function () {
+	if (this.isOffline()) return;
 	var ptr = jsapi_.host_get_receivedAddress(this._pointer);
 	return new ENetAddress(ptr);
 };
+
 ENetHost.prototype.address = function () {
+	if (this.isOffline()) return;
 	var addr = this._socket.address();
 	return new ENetAddress(addr.address, addr.port);
 };
 ENetHost.prototype.send = function (ip, port, buff, callback) {
+	if (this.isOffline()) return;
 	this._socket.send(buff, 0, buff.length, port, ip, callback);
 };
 ENetHost.prototype.flush = function () {
+	if (this.isOffline()) return;
 	enet_.host_flush(this._pointer);
 };
 
 ENetHost.prototype.connect = function (address, channelCount, data, connectCallback) {
+	if (this.isOffline()) return;
 	var self = this;
 	var peer;
 	var ptr = jsapi_.enet_host_connect(this._pointer, address.host(), address.port(), channelCount || 5, data || 0);
@@ -252,7 +284,16 @@ ENetHost.prototype.connect = function (address, channelCount, data, connectCallb
 		}
 	}
 };
-ENetHost.prototype.start_watcher = function (ms_interval) {
+
+ENetHost.prototype.peers = function () {
+	var peer, peer_ptr, peers = [];
+	for (peer_ptr in this.connectedPeers) {
+		peers.push(this.connectedPeers[peer_ptr]);
+	}
+	return peers;
+};
+
+ENetHost.prototype.start = function (ms_interval) {
 	var self = this;
 	if (!self._pointer) return; //cannot start a host that is not initialised
 	if (self._io_loop) {
@@ -262,13 +303,7 @@ ENetHost.prototype.start_watcher = function (ms_interval) {
 		self.service();
 	}, ms_interval || ENET_HOST_SERVICE_INTERVAL);
 };
-ENetHost.prototype.stop_watcher = function () {
-	if (this._io_loop) {
-		clearInterval(this._io_loop);
-	}
-};
-ENetHost.prototype.start = ENetHost.prototype.start_watcher;
-ENetHost.prototype.stop = ENetHost.prototype.stop_watcher;
+ENetHost.prototype.stop = ENetHost.prototype.destroy;
 
 function ENetPacket(pointer) {
 	var self = this;
