@@ -7,24 +7,34 @@ enet.createClient(function (err, client) {
 		console.log(err);
 		return;
 	}
-	console.log("client ready");
 
-	client.on("connect", function (peer, data) {
-		console.log("connected to:", peer.address().address());
-		var packet = new enet.Packet(new Buffer("hello, I'm the client\n"), enet.Packet.FLAG_RELIABLE);
-		peer.send(0, packet);
-		peer.on("disconnect", function () {
-			console.log("disconnected");
-			client.destroy();
+	client.on("destroy", function () {
+		console.log("shutdown.");
+	});
+
+	connect();
+
+	function connect() {
+		console.log("connecting...");
+		client.connect(s_addr, 1, 0, function (err, peer, data) {
+			if (err) {
+				console.log("timeout!");
+				setTimeout(connect, 500);
+				return;
+			}
+			console.log("connected to: %s:%s", peer.address().address(), peer.address().port());
+			var packet = new enet.Packet(new Buffer("hello, I'm the client\n"), enet.Packet.FLAG_RELIABLE);
+			peer.send(0, packet);
+
+			peer.on("message", function (packet, chan) {
+				console.log("got message:", packet.data().toString());
+			});
+
+			peer.on("disconnect", function () {
+				console.log("disconnected.");
+				console.log("shutting down...");
+				client.destroy();
+			});
 		});
-	});
-
-	client.on("message", function (peer, packet, chan) {
-		console.log("got message:", packet.data().toString());
-	});
-
-	console.log("connecting...");
-
-	client.connect(s_addr, 1, 0);
-
+	}
 });
