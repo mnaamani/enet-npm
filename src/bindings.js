@@ -7,7 +7,7 @@ var ENETModule = moduleScope.Module;
 var jsapi_ = moduleScope.Module.jsapi;
 var enet_ = moduleScope.Module.libenet;
 
-var ENET_HOST_SERVICE_INTERVAL = 30; //milli-seconds
+var ENET_HOST_SERVICE_INTERVAL = 30; //milliseconds
 var ENET_PACKET_FLAG_RELIABLE = 1;
 
 module.exports.init = function (func) {
@@ -28,18 +28,74 @@ util.inherits(ENetHost, events.EventEmitter);
 util.inherits(ENetPacket, events.EventEmitter);
 util.inherits(ENetPeer, events.EventEmitter);
 
-module.exports.createServer = function (P) {
-	if (P) return new ENetHost(P.address, P.peers, P.channels, P.down, P.up, "server");
+function createHost(arg, callback, host_type) {
+	var host, socket;
+
+	try {
+		host = new ENetHost(arg.address, arg.peers, arg.channels, arg.down, arg.up, host_type);
+		socket = host._socket;
+
+		if (!socket) {
+			callback(new Error("socket-creation-error"));
+			return;
+		}
+
+		socket.on("error", function (e) {
+			host.destroy();
+			if (host_type === "server") {
+				callback(e);
+			} else {
+				host.emit("error", e);
+			}
+		});
+
+		host.start();
+
+		if (host_type === "client" || socket._bound || socket.__receiving) {
+			setTimeout(function () {
+				if (socket._bound || socket.__receiving) socket.setBroadcast(true);
+				callback(undefined, host);
+			}, 20);
+		} else {
+			socket.on("listening", function () {
+				socket.setBroadcast(true);
+				callback(undefined, host);
+			});
+		}
+
+	} catch (e) {
+		callback(e);
+		return;
+	}
+}
+
+module.exports.createServer = function (arg, callback) {
+
+	//server must provide an ENetAddress to be able to accept incomig connections
+	if (!arg || !arg.address) {
+		callback(new Error("no-address"));
+		return;
+	}
+
+	createHost(arg, callback, "server");
 };
 
-module.exports.createClient = function (P) {
-	var client;
-	if (P) {
-		client = new ENetHost(undefined, P.peers, P.channels, P.down, P.up, "client");
-	} else {
-		client = new ENetHost(undefined, 32, 5, 0, 0, "client");
-	}
-	return client;
+module.exports.createClient = function (arg, callback) {
+	var opt = {
+		peers: 32,
+		channels: 5,
+		down: 0,
+		up: 0
+	};
+
+	if (typeof arg === "function") {
+		callback = arg;
+	} else opt = arg;
+
+	//make sure no address is included so enet will treat host as a client and not accept incoming connections
+	delete opt.address;
+
+	createHost(opt, callback, "client");
 };
 
 function ENetHost(address, maxpeers, maxchannels, bw_down, bw_up, host_type) {
@@ -72,18 +128,7 @@ function ENetHost(address, maxpeers, maxchannels, bw_down, bw_up, host_type) {
 	self._event = new ENetEvent(); //allocate memory for events - free it when we destroy the host
 	self._pointer = pointer;
 	var socketfd = jsapi_.host_get_socket(self._pointer);
-	var socket = self._socket = ENETModule["GetSocket"](socketfd);
-	if (socket._bound || socket.__receiving) {
-		setTimeout(function () {
-			socket.setBroadcast(true);
-			self.emit('ready', socket.address().address, socket.address().port);
-		}, 20);
-	} else {
-		socket.on("listening", function () {
-			socket.setBroadcast(true);
-			self.emit('ready', socket.address().address, socket.address().port);
-		});
-	}
+	self._socket = ENETModule["GetSocket"](socketfd);
 }
 
 ENetHost.prototype.service = function () {
@@ -157,10 +202,15 @@ ENetHost.prototype.service = function () {
 ENetHost.prototype.destroy = function () {
 	var self = this;
 	self.stop();
-	self._event.free();
-	enet_.host_destroy(this._pointer);
+	if (self._event) self._event.free();
+	if (this._pointer) enet_.host_destroy(this._pointer);
 	delete self._pointer;
 	delete self._event;
+	delete self._io_loop;
+	delete self._socket;
+	delete self.connectedPeers;
+	self.emit("destroy");
+	self.removeAllListerners();
 };
 ENetHost.prototype.receivedAddress = function () {
 	var ptr = jsapi_.host_get_receivedAddress(this._pointer);
@@ -204,8 +254,11 @@ ENetHost.prototype.connect = function (address, channelCount, data, connectCallb
 	}
 };
 ENetHost.prototype.start_watcher = function (ms_interval) {
-	if (this._io_loop) return;
 	var self = this;
+	if (!self._pointer) return; //cannot start a host that is not initialised
+	if (self._io_loop) {
+		clearInterval(this._io_loop);
+	}
 	self._io_loop = setInterval(function () {
 		self.service();
 	}, ms_interval || ENET_HOST_SERVICE_INTERVAL);
