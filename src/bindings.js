@@ -50,7 +50,8 @@ function createHost(arg, callback, host_type) {
 		});
 
 		socket.on("close", function () {
-			host.emit("close");
+			host._socket_closed = true;
+			host.destroy();
 		});
 
 		if (host_type === "client") host.start();
@@ -145,79 +146,82 @@ ENetHost.prototype.isOnline = function () {
 	return (this.isOffline() === false);
 };
 
-ENetHost.prototype.service = function () {
+ENetHost.prototype._service = function () {
 	var self = this;
 	var peer;
 	var recvdAddr;
 
-	if (!self._pointer || !self._event) return;
-	try {
-		var err = enet_.host_service(self._pointer, self._event._pointer, 0);
-		while (err > 0) {
-			switch (self._event.type()) {
-			case 0: //none
-				break;
-			case 1: //connect
-				peer = self.connectedPeers[self._event.peerPtr()];
-				if (peer) {
-					//outgoing connection
-					peer.emit("connect");
-					self.emit("connect",
-						peer,
-						undefined,
-						true //local host initiated the connection to foriegn host
-					);
-				} else {
-					peer = self.connectedPeers[self._event.peerPtr()] = self._event.peer();
-					peer._host = self;
-					//incoming connection
-					self.emit("connect",
-						peer,
-						self._event.data(),
-						false //foreign host initiated connection to local host
-					);
-				}
-				break;
-			case 2: //disconnect
-				peer = self.connectedPeers[self._event.peerPtr()];
-				if (peer) {
-					delete self.connectedPeers[self._event.peerPtr()];
-					peer._pointer = 0;
-					peer.emit("disconnect", self._event.data());
-				}
-				break;
-			case 3: //receive
-				peer = self.connectedPeers[self._event.peerPtr()] || self._event.peer();
-				self.emit("message",
+	if (!self._pointer || !self._event || self._socket_closed) return;
+
+	var err = enet_.host_service(self._pointer, self._event._pointer, 0);
+	while (err > 0) {
+		switch (self._event.type()) {
+		case 0: //none
+			break;
+		case 1: //connect
+			peer = self.connectedPeers[self._event.peerPtr()];
+			if (peer) {
+				//outgoing connection
+				peer.emit("connect");
+				self.emit("connect",
 					peer,
-					self._event.packet(),
-					self._event.channelID()
+					undefined,
+					true //local host initiated the connection to foriegn host
 				);
-				peer.emit("message", self._event.packet(), self._event.channelID());
-				self._event.packet().destroy();
-				break;
-			case 100: //JSON,telex
-				recvdAddr = self.receivedAddress();
-				self.emit("telex",
-					self._event.packet().data(), {
-						'address': recvdAddr.address,
-						'port': recvdAddr.port
-					}
+			} else {
+				peer = self.connectedPeers[self._event.peerPtr()] = self._event.peer();
+				peer._host = self;
+				//incoming connection
+				self.emit("connect",
+					peer,
+					self._event.data(),
+					false //foreign host initiated connection to local host
 				);
-				self._event.packet().destroy();
-				break;
 			}
-			err = enet_.host_service(self._pointer, self._event._pointer, 0);
+			break;
+		case 2: //disconnect
+			peer = self.connectedPeers[self._event.peerPtr()];
+			if (peer) {
+				delete self.connectedPeers[self._event.peerPtr()];
+				peer._pointer = 0;
+				peer.emit("disconnect", self._event.data());
+			}
+			break;
+		case 3: //receive
+			peer = self.connectedPeers[self._event.peerPtr()] || self._event.peer();
+			self.emit("message",
+				peer,
+				self._event.packet(),
+				self._event.channelID()
+			);
+			peer.emit("message", self._event.packet(), self._event.channelID());
+			self._event.packet().destroy();
+			break;
+		case 100: //JSON,telex
+			recvdAddr = self.receivedAddress();
+			self.emit("telex",
+				self._event.packet().data(), {
+					'address': recvdAddr.address,
+					'port': recvdAddr.port
+				}
+			);
+			self._event.packet().destroy();
+			break;
 		}
-	} catch (e) {
-		//console.log(e);
-		if (err < 0) console.error("error servicing host: ", err);
+		if (!self._pointer || !self._event || self._socket_closed) return;
+		err = enet_.host_service(self._pointer, self._event._pointer, 0);
 	}
+
+	if (err < 0) console.error("Error servicing host: ", err);
+
 };
 
 ENetHost.prototype.destroy = function () {
 	var self = this;
 	var peer, peer_ptr;
+	if (self._shutting_down) return;
+	self._shutting_down = true;
+
 	if (self._io_loop) {
 		clearInterval(self._io_loop);
 	}
@@ -226,16 +230,19 @@ ENetHost.prototype.destroy = function () {
 	for (peer_ptr in self.connectedPeers) {
 		peer = self.connectedPeers[peer_ptr];
 		if (peer._pointer !== 0) {
-			enet_.peer_disconnect_now(peer_ptr, 0);
+			if (!self._socket_closed) enet_.peer_disconnect_now(peer_ptr, 0);
 			peer._pointer = 0;
-			peer.emit("disconnect", self._event.data());
+			peer.emit("disconnect", 0);
 		}
 	}
 	delete self.connectedPeers;
-	self.service(); //send out all disconnect commands
 
 	if (self._event) self._event.free();
-	if (this._pointer) enet_.host_destroy(this._pointer);
+
+	try {
+		if (self._pointer) enet_.host_destroy(this._pointer);
+	} catch (e) {}
+
 	delete self._pointer;
 	delete self._event;
 	delete self._io_loop;
@@ -312,7 +319,7 @@ ENetHost.prototype.start = function (ms_interval) {
 		clearInterval(this._io_loop);
 	}
 	self._io_loop = setInterval(function () {
-		self.service();
+		self._service();
 	}, ms_interval || ENET_HOST_SERVICE_INTERVAL);
 };
 ENetHost.prototype.stop = ENetHost.prototype.destroy;
@@ -510,13 +517,18 @@ ENetPeer.prototype.disconnectLater = function (data) {
 };
 ENetPeer.prototype.address = function () {
 	var peer = this;
-	if (!peer._pointer) return;
+	if (!peer._pointer) {
+		if (peer._address) return peer._address;
+		return;
+	}
 	var ptr = jsapi_.peer_get_address(peer._pointer);
 	var addr = new ENetAddress(ptr);
-	return ({
+	//save the address so we can check it after disconnect
+	peer._address = {
 		address: addr.address(),
 		port: addr.port()
-	});
+	};
+	return peer._address;
 };
 
 //turn a channel with peer into a node writeable Stream
