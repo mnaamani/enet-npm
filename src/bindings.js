@@ -168,6 +168,7 @@ ENetHost.prototype.service = function () {
 					);
 				} else {
 					peer = self.connectedPeers[self._event.peerPtr()] = self._event.peer();
+					peer._host = self;
 					//incoming connection
 					self.emit("connect",
 						peer,
@@ -269,6 +270,7 @@ ENetHost.prototype.connect = function (address, channelCount, data, connectCallb
 	var succeeded = false;
 	if (ptr) {
 		peer = new ENetPeer(ptr);
+		peer._host = self;
 		self.connectedPeers[ptr] = peer;
 		if (connectCallback && (typeof connectCallback === 'function')) {
 			peer.on("connect", function () {
@@ -441,35 +443,64 @@ function ENetPeer(pointer) {
 }
 
 ENetPeer.prototype.send = function (channel, packet, callback) {
-	var self = this;
+	var peer = this;
+	if (!peer._pointer) {
+		if (callback) callback.call(peer, new Error("Peer is disconnected"));
+		return;
+	}
 	if (packet instanceof Buffer) packet = new ENetPacket(packet, ENET_PACKET_FLAG_RELIABLE);
 	if (callback && callback instanceof Function) {
 		packet.on("free", function () {
-			if (callback) callback.call(self, undefined);
+			if (callback) callback.call(peer, undefined);
 		});
 	}
-	if (enet_.peer_send(this._pointer, channel, packet._pointer) !== 0) {
-		if (callback) callback.call(self, new Error('Packet not queued'));
+	if (enet_.peer_send(peer._pointer, channel, packet._pointer) !== 0) {
+		if (callback) callback.call(peer, new Error('Packet not queued'));
 	}
 };
-ENetPeer.prototype.receive = function () {};
+ENetPeer.prototype._delete = function (emitDisconnect) {
+	var peer = this;
+	if (!peer._pointer) return;
+	setTimeout(function () {
+		if (peer._host) delete peer._host.connectedPeers[peer._pointer];
+		peer._pointer = 0;
+		if (peer._host && emitDisconnect) peer.emit("disconnect");
+	}, 0);
+};
+
 ENetPeer.prototype.reset = function () {
+	var peer = this;
+	if (!peer._pointer) return;
 	enet_.peer_reset(this._pointer);
+	peer._delete(false);
 };
 ENetPeer.prototype.ping = function () {
-	enet_.peer_ping(this._pointer);
+	var peer = this;
+	if (!peer._pointer) return;
+	enet_.peer_ping(peer._pointer);
 };
 ENetPeer.prototype.disconnect = function (data) {
-	enet_.peer_disconnect(this._pointer, data || 0);
+	var peer = this;
+	if (!peer._pointer) return;
+	enet_.peer_disconnect(peer._pointer, data || 0);
+	peer._delete(true);
 };
 ENetPeer.prototype.disconnectNow = function (data) {
-	enet_.peer_disconnect_now(this._pointer, data || 0);
+	var peer = this;
+	if (!peer._pointer) return;
+	enet_.peer_disconnect_now(peer._pointer, data || 0);
+	peer._delete(true);
 };
 ENetPeer.prototype.disconnectLater = function (data) {
-	enet_.peer_disconnect_later(this._pointer, data || 0);
+	var peer = this;
+	if (!peer._pointer) return;
+	enet_.peer_disconnect_later(peer._pointer, data || 0);
+	peer._delete(true);
 };
 ENetPeer.prototype.address = function () {
-	var ptr = jsapi_.peer_get_address(this._pointer);
+	var peer = this;
+	if (!peer._pointer) return;
+	var ptr = jsapi_.peer_get_address(peer._pointer);
 	return new ENetAddress(ptr);
 };
 
@@ -477,6 +508,8 @@ ENetPeer.prototype.address = function () {
 // ref: https://github.com/substack/stream-handbook
 ENetPeer.prototype.createWriteStream = function (channel) {
 	var peer = this;
+	if (!peer._pointer) return;
+
 	var s = new Stream.Writable();
 
 	peer.on("disconnect", function (data) {
@@ -500,6 +533,8 @@ ENetPeer.prototype.createWriteStream = function (channel) {
 
 ENetPeer.prototype.createReadStream = function (channel) {
 	var peer = this;
+	if (!peer._pointer) return;
+
 	var s = new Stream.Readable();
 
 	peer.on("disconnect", function (data) {

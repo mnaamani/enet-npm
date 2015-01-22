@@ -21,6 +21,10 @@ enet.createServer({
 			setTimeout(function () {
 				peer.disconnect();
 			}, 2000);
+
+			peer.on("disconnect", function () {
+				console.log("disconnected peer");
+			});
 		});
 
 		host.start();
