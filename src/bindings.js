@@ -139,7 +139,7 @@ function ENetHost(address, maxpeers, maxchannels, bw_down, bw_up, host_type) {
 }
 
 ENetHost.prototype.isOffline = function () {
-	return (typeof this._pointer === "undefined" || this._pointer === 0);
+	return (typeof this._pointer === "undefined" || this._pointer === 0 || this._shutting_down || this._socket_closed);
 };
 
 ENetHost.prototype.isOnline = function () {
@@ -274,7 +274,10 @@ ENetHost.prototype.flush = function () {
 };
 
 ENetHost.prototype.connect = function (address, channelCount, data, connectCallback) {
-	if (this.isOffline()) return;
+	if (this.isOffline()) {
+		if (typeof connectCallback === 'function') connectCallback.call(this, new Error("host-destroyed"));
+		return;
+	}
 	var self = this;
 	var peer;
 	var enetAddr = (address instanceof ENetAddress) ? address : new ENetAddress(address);
@@ -291,7 +294,7 @@ ENetHost.prototype.connect = function (address, channelCount, data, connectCallb
 				connectCallback.call(self, undefined, peer);
 			});
 			peer.on("disconnect", function () {
-				if (!succeeded) connectCallback.call(self, new Error("timeout"));
+				if (!succeeded) connectCallback.call(self, new Error("failed"));
 			});
 		}
 		return peer;
@@ -462,6 +465,11 @@ function ENetPeer(pointer) {
 
 ENetPeer.prototype.send = function (channel, packet, callback) {
 	var peer = this;
+	if (peer._host.isOffline()) {
+		if (typeof callback === 'function') callback.call(peer, new Error("host-destroyed"));
+		return;
+	}
+
 	if (!peer._pointer) {
 		if (callback) callback.call(peer, new Error("Peer is disconnected"));
 		return;
