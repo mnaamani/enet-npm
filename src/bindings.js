@@ -106,7 +106,7 @@ function ENetHost(address, maxpeers, maxchannels, bw_down, bw_up, host_type) {
 	events.EventEmitter.call(this);
 	this.setMaxListeners(0);
 	this.connectedPeers = {};
-
+	var enetAddr;
 	var self = this;
 	var pointer = 0;
 
@@ -122,7 +122,8 @@ function ENetHost(address, maxpeers, maxchannels, bw_down, bw_up, host_type) {
 		pointer = jsapi_.enet_host_create_client(maxpeers || 128, maxchannels || 5, bw_down || 0, bw_up || 0);
 
 	} else { //default is a server
-		pointer = jsapi_.enet_host_create(address.host(), address.port(), maxpeers || 128, maxchannels || 5,
+		enetAddr = (address instanceof ENetAddress) ? address : new ENetAddress(address);
+		pointer = jsapi_.enet_host_create(enetAddr.host(), enetAddr.port(), maxpeers || 128, maxchannels || 5,
 			bw_down || 0,
 			bw_up || 0);
 	}
@@ -269,7 +270,9 @@ ENetHost.prototype.connect = function (address, channelCount, data, connectCallb
 	if (this.isOffline()) return;
 	var self = this;
 	var peer;
-	var ptr = jsapi_.enet_host_connect(this._pointer, address.host(), address.port(), channelCount || 5, data || 0);
+	var enetAddr = (address instanceof ENetAddress) ? address : new ENetAddress(address);
+	var ptr = jsapi_.enet_host_connect(this._pointer, enetAddr.host(), enetAddr.port(), channelCount || 5, data ||
+		0);
 	var succeeded = false;
 	if (ptr) {
 		peer = new ENetPeer(ptr);
@@ -392,8 +395,13 @@ ENetEvent.prototype.channelID = function () {
 
 function ENetAddress() {
 	if (arguments.length == 1 && typeof arguments[0] == 'object') {
-		this._host = arguments[0].host();
-		this._port = arguments[0].port();
+		if (arguments[0] instanceof ENetAddress) {
+			this._host = arguments[0].host();
+			this._port = arguments[0].port();
+		} else {
+			this._host = ip2long((arguments[0]).address || 0);
+			this._port = parseInt(arguments[0].port || 0);
+		}
 		return this;
 	}
 	if (arguments.length == 1 && typeof arguments[0] == 'number') {
@@ -403,7 +411,7 @@ function ENetAddress() {
 	if (arguments.length == 1 && typeof arguments[0] == 'string') {
 		var ipp = arguments[0].split(':');
 		this._host = ip2long(ipp[0]);
-		this._port = ipp[1] || 0;
+		this._port = parseInt(ipp[1] || 0);
 		return this;
 	}
 	if (arguments.length == 2) {
@@ -412,7 +420,7 @@ function ENetAddress() {
 		} else {
 			this._host = arguments[0];
 		}
-		this._port = arguments[1];
+		this._port = parseInt(arguments[1]);
 		return this;
 	}
 	throw ("bad parameters creating ENetAddress");
