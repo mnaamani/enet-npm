@@ -34,7 +34,7 @@ function createHost(arg, callback, host_type) {
 	try {
 		host = new ENetHost(arg.address, arg.peers, arg.channels, arg.down, arg.up, host_type);
 		socket = host._socket;
-
+		host._type = host_type;
 		if (!socket) {
 			callback(new Error("socket-creation-error"));
 			return;
@@ -53,8 +53,6 @@ function createHost(arg, callback, host_type) {
 			host._socket_closed = true;
 			host.destroy();
 		});
-
-		if (host_type === "client") host.start();
 
 		if (host_type === "client" || socket._bound || socket.__receiving) {
 			setTimeout(function () {
@@ -286,11 +284,15 @@ ENetHost.prototype.connect = function (address, channelCount, data, callback) {
 		if (typeof callback === 'function') callback(new Error("host-destroyed"));
 		return;
 	}
+
 	var self = this;
 	var peer;
 	var enetAddr = (address instanceof ENetAddress) ? address : new ENetAddress(address);
 	var ptr = jsapi_.enet_host_connect(this._pointer, enetAddr.host(), enetAddr.port(), channelCount || 5, data ||
 		0);
+
+	if (self._type === "client") self.start(); //client servicing starts now
+
 	var succeeded = false;
 	if (ptr) {
 		peer = new ENetPeer(ptr);
