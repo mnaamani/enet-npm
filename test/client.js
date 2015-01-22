@@ -9,28 +9,35 @@ enet.createClient(function (err, client) {
 	}
 
 	client.on("destroy", function () {
-		console.log("shutdown.");
+		console.log("shutdown!");
 	});
 
 	connect();
 
+	console.log("connecting...");
+
 	function connect() {
-		console.log("connecting...");
 		client.connect(s_addr, 1, 0, function (err, peer, data) {
 			if (err) {
-				console.log("timeout!");
-				setTimeout(connect, 500);
+				console.log(err);
+				if (err.message === "host-destroyed") process.exit();
+				console.log("retrying...");
+				setTimeout(connect, 1000);
 				return;
 			}
-			console.log("connected to: %s:%s", peer.address().address(), peer.address().port());
+			console.log("connected");
+
+			console.log("connected to:", peer.address());
 			var packet = new enet.Packet(new Buffer("hello, I'm the client\n"), enet.Packet.FLAG_RELIABLE);
-			peer.send(0, packet);
+			peer.send(0, packet, function (err) {
+				if (err) console.log("error sending packet:", e);
+			});
 
 			peer.on("message", function (packet, chan) {
 				console.log("got message:", packet.data().toString());
 			});
 
-			peer.on("disconnect", function () {
+			peer.once("disconnect", function () {
 				console.log("disconnected.");
 				console.log("shutting down...");
 				client.destroy();

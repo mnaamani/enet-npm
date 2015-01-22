@@ -13,7 +13,7 @@ var server = new enet.Host(addr1, 32);
 
 server.on("connect", function (peer, data) {
 	console.log("peer connected. data=", data);
-	console.log("peer address:", peer.address().address() + ":" + peer.address().port());
+	console.log("peer address:", peer.address().address + ":" + peer.address().port);
 	var packet1 = new enet.Packet("Bye Bye1", 1);
 	var packet2 = new enet.Packet("Bye Bye2", 1);
 	peer.send(1, packet1, function (err) {
@@ -34,7 +34,6 @@ enet.createClient(function (err, client) {
 		server.destroy();
 		return;
 	}
-	//console.log("client ready address:", client.address().address(), client.address().port());
 	client.connect(new enet.Address("127.0.0.1", 5000), 5, 6969, function (err, peer, data) {
 		if (err) process.exit();
 		peer.on("disconnect", function () {

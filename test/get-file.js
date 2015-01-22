@@ -10,11 +10,11 @@ enet.createClient(function (err, host) {
 	}
 	console.log("client ready");
 	host.on("connect", function (peer, data) {
-		console.log("connected");
+		console.log("connected to:", peer.address().address);
 		peer.createReadStream(0).pipe(fs.createWriteStream("./got-file.txt"));
 		peer.on("disconnect", function (data) {
-			console.log("disconnected from:", peer.address().address());
-			process.exit();
+			console.log("disconnected from:", peer.address().address);
+			host.stop();
 		});
 	});
 

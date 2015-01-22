@@ -1,7 +1,10 @@
 var enet = require("../lib/enet");
 
 enet.createServer({
-		address: new enet.Address("0.0.0.0", 6666),
+		address: {
+			address: "0.0.0.0",
+			port: "6666"
+		},
 		peers: 32,
 		channels: 1,
 		down: 0,
@@ -12,7 +15,7 @@ enet.createServer({
 			console.log(err);
 			return;
 		}
-		console.log("host ready on %s:%s", host.address().address(), host.address().port());
+		console.log("host ready on %s:%s", host.address().address, host.address().port);
 
 		host.on("connect", function (peer, data) {
 			console.log("peer connected");

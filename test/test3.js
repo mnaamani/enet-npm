@@ -5,7 +5,7 @@ var server = new enet.Host(addr1, 32);
 
 server.on("connect", function (peer, data) {
 	console.log("client connected. data=", data);
-	console.log("client address:", peer.address().address() + ":" + peer.address().port());
+	console.log("client address:", peer.address().address + ":" + peer.address().port);
 	var packet1 = new enet.Packet("Bye Bye1", 1);
 	peer.send(1, packet1, function (err) {
 		if (!err) console.log("packet1 sent");
