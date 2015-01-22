@@ -199,8 +199,8 @@ ENetHost.prototype.service = function () {
 				recvdAddr = self.receivedAddress();
 				self.emit("telex",
 					self._event.packet().data(), {
-						'address': recvdAddr.address(),
-						'port': recvdAddr.port()
+						'address': recvdAddr.address,
+						'port': recvdAddr.port
 					}
 				);
 				self._event.packet().destroy();
@@ -245,13 +245,16 @@ ENetHost.prototype.destroy = function () {
 ENetHost.prototype.receivedAddress = function () {
 	if (this.isOffline()) return;
 	var ptr = jsapi_.host_get_receivedAddress(this._pointer);
-	return new ENetAddress(ptr);
+	var addr = new ENetAddress(ptr);
+	return ({
+		address: addr.address(),
+		port: addr.port()
+	});
 };
 
 ENetHost.prototype.address = function () {
 	if (this.isOffline()) return;
-	var addr = this._socket.address();
-	return new ENetAddress(addr.address, addr.port);
+	return this._socket.address();
 };
 ENetHost.prototype.send = function (ip, port, buff, callback) {
 	if (this.isOffline()) return;
@@ -501,7 +504,11 @@ ENetPeer.prototype.address = function () {
 	var peer = this;
 	if (!peer._pointer) return;
 	var ptr = jsapi_.peer_get_address(peer._pointer);
-	return new ENetAddress(ptr);
+	var addr = new ENetAddress(ptr);
+	return ({
+		address: addr.address(),
+		port: addr.port()
+	});
 };
 
 //turn a channel with peer into a node writeable Stream
