@@ -49,6 +49,10 @@ function createHost(arg, callback, host_type) {
 			}
 		});
 
+		socket.on("close", function () {
+			host.emit("close");
+		});
+
 		if (host_type === "client") host.start();
 
 		if (host_type === "client" || socket._bound || socket.__receiving) {
@@ -160,7 +164,7 @@ ENetHost.prototype.service = function () {
 					self.emit("connect",
 						peer,
 						undefined,
-						true
+						true //local host initiated the connection to foriegn host
 					);
 				} else {
 					peer = self.connectedPeers[self._event.peerPtr()] = self._event.peer();
@@ -168,7 +172,7 @@ ENetHost.prototype.service = function () {
 					self.emit("connect",
 						peer,
 						self._event.data(),
-						false
+						false //foreign host initiated connection to local host
 					);
 				}
 				break;
