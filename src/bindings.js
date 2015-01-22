@@ -75,7 +75,9 @@ function createHost(arg, callback, host_type) {
 }
 
 module.exports.createServer = function (arg, callback) {
-
+	if (typeof callback !== "function" || !arg) {
+		throw (new Error("must provide server settings and a callback"));
+	}
 	//server must provide an ENetAddress to be able to accept incomig connections
 	if (!arg || !arg.address) {
 		if (typeof callback === 'function') callback(new Error("no-address"));
@@ -95,10 +97,16 @@ module.exports.createClient = function (arg, callback) {
 
 	if (typeof arg === "function") {
 		callback = arg;
-	} else opt = arg;
+	} else {
+		opt = arg || opt;
+	}
 
 	//make sure no address is included so enet will treat host as a client and not accept incoming connections
 	delete opt.address;
+
+	if (typeof callback !== "function") {
+		throw (new Error("must provide a callback"));
+	}
 
 	createHost(opt, callback, "client");
 };
