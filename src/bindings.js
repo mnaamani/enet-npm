@@ -34,7 +34,7 @@ function createHost(arg, callback, host_type) {
 	try {
 		host = new ENetHost(arg.address, arg.peers, arg.channels, arg.down, arg.up, host_type);
 		socket = host._socket;
-		host._type = host_type;
+
 		if (!socket) {
 			callback(new Error("socket-creation-error"));
 			return;
@@ -126,9 +126,15 @@ function ENetHost(address, maxpeers, maxchannels, bw_down, bw_up, host_type) {
 	}
 
 	if (host_type === 'client') {
+		this._type = "client";
 		pointer = jsapi_.enet_host_create_client(maxpeers || 128, maxchannels || 5, bw_down || 0, bw_up || 0);
 
 	} else { //default is a server
+		this._type = "server";
+		address = address || {
+			address: "0.0.0.0",
+			port: 0
+		};
 		enetAddr = (address instanceof ENetAddress) ? address : new ENetAddress(address);
 		pointer = jsapi_.enet_host_create(enetAddr.host(), enetAddr.port(), maxpeers || 128, maxchannels || 5,
 			bw_down || 0,
@@ -291,7 +297,7 @@ ENetHost.prototype.connect = function (address, channelCount, data, callback) {
 	var ptr = jsapi_.enet_host_connect(this._pointer, enetAddr.host(), enetAddr.port(), channelCount || 5, data ||
 		0);
 
-	if (self._type === "client") self.start(); //client servicing starts now
+	self.firstStart(); //start servicing if not yet started
 
 	var succeeded = false;
 	if (ptr) {
@@ -323,6 +329,15 @@ ENetHost.prototype.peers = function () {
 		peers.push(this.connectedPeers[peer_ptr]);
 	}
 	return peers;
+};
+
+ENetHost.prototype.firstStart = function () {
+	var self = this;
+	if (!self._io_loop) {
+		self._io_loop = setInterval(function () {
+			self._service();
+		}, ENET_HOST_SERVICE_INTERVAL);
+	}
 };
 
 ENetHost.prototype.start = function (ms_interval) {
