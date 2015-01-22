@@ -25,8 +25,8 @@ module.exports.inet_ip2long = ip2long;
 module.exports.inet_long2ip = long2ip;
 
 util.inherits(ENetHost, events.EventEmitter);
-util.inherits(ENetPacket, events.EventEmitter);
 util.inherits(ENetPeer, events.EventEmitter);
+util.inherits(ENetPacket, events.EventEmitter);
 
 function createHost(arg, callback, host_type) {
 	var host, socket;
@@ -43,7 +43,7 @@ function createHost(arg, callback, host_type) {
 		socket.on("error", function (e) {
 			host.destroy();
 			if (host_type === "server") {
-				callback(e);
+				if (typeof callback === 'function') callback(e);
 			} else {
 				host.emit("error", e);
 			}
@@ -59,17 +59,17 @@ function createHost(arg, callback, host_type) {
 		if (host_type === "client" || socket._bound || socket.__receiving) {
 			setTimeout(function () {
 				if (socket._bound || socket.__receiving) socket.setBroadcast(true);
-				callback(undefined, host);
-			}, 20);
+				if (typeof callback === 'function') callback(undefined, host);
+			}, 0);
 		} else {
 			socket.on("listening", function () {
 				socket.setBroadcast(true);
-				callback(undefined, host);
+				if (typeof callback === 'function') callback(undefined, host);
 			});
 		}
 
 	} catch (e) {
-		callback(e);
+		if (typeof callback === 'function') callback(e);
 		return;
 	}
 }
@@ -78,7 +78,7 @@ module.exports.createServer = function (arg, callback) {
 
 	//server must provide an ENetAddress to be able to accept incomig connections
 	if (!arg || !arg.address) {
-		callback(new Error("no-address"));
+		if (typeof callback === 'function') callback(new Error("no-address"));
 		return;
 	}
 
@@ -273,9 +273,9 @@ ENetHost.prototype.flush = function () {
 	enet_.host_flush(this._pointer);
 };
 
-ENetHost.prototype.connect = function (address, channelCount, data, connectCallback) {
+ENetHost.prototype.connect = function (address, channelCount, data, callback) {
 	if (this.isOffline()) {
-		if (typeof connectCallback === 'function') connectCallback.call(this, new Error("host-destroyed"));
+		if (typeof callback === 'function') callback(new Error("host-destroyed"));
 		return;
 	}
 	var self = this;
@@ -288,20 +288,20 @@ ENetHost.prototype.connect = function (address, channelCount, data, connectCallb
 		peer = new ENetPeer(ptr);
 		peer._host = self;
 		self.connectedPeers[ptr] = peer;
-		if (connectCallback && (typeof connectCallback === 'function')) {
+		if (typeof callback === 'function') {
 			peer.on("connect", function () {
 				succeeded = true;
-				connectCallback.call(self, undefined, peer);
+				callback(undefined, peer);
 			});
 			peer.on("disconnect", function () {
-				if (!succeeded) connectCallback.call(self, new Error("failed"));
+				if (!succeeded) callback(new Error("failed"));
 			});
 		}
 		return peer;
 	} else {
 		//ptr is NULL - number of peers exceeded
-		if (connectCallback && (typeof connectCallback === 'function')) {
-			connectCallback.call(null, new Error("maxpeers"));
+		if (typeof callback === 'function') {
+			callback(new Error("maxpeers"));
 			return undefined;
 		}
 	}
@@ -327,37 +327,74 @@ ENetHost.prototype.start = function (ms_interval) {
 };
 ENetHost.prototype.stop = ENetHost.prototype.destroy;
 
-function ENetPacket(pointer) {
-	var self = this;
-	if (arguments.length == 1 && typeof arguments[0] == 'number') {
-		this._pointer = arguments[0];
-		return this;
+function ENetPacket() {
+	var packet = this;
+	events.EventEmitter.call(packet);
+
+	var buf, flags, callback;
+
+	//packet from pointer
+	if (arguments.length === 1 && typeof arguments[0] === 'number') {
+		packet._pointer = arguments[0];
+		return packet;
 	}
-	if (arguments.length > 0 && typeof arguments[0] == 'object') {
+
+	//packet from buffer
+	if (arguments.length > 0 && typeof arguments[0] === 'object') {
 		//construct a new packet from node buffer
-		var buf = arguments[0];
-		var flags = arguments[1] || 0;
-		this._pointer = enet_.packet_create(0, buf.length, flags);
-		var begin = jsapi_.packet_get_data(this._pointer);
-		var end = begin + buf.length;
-		var c = 0,
-			i = begin;
-		for (; i < end; i++, c++) {
-			ENETModule["HEAPU8"][i] = buf.readUInt8(c);
+		buf = arguments[0];
+
+		if (typeof arguments[1] === 'function') {
+			callback = arguments[1];
+		}
+		if (typeof arguments[1] === 'number') {
+			flags = arguments[1];
+		}
+		if (arguments.length === 3 && typeof arguments[2] === 'function') {
+			callback = arguments[2];
+		}
+		flags = flags || 0;
+
+		packet._packetFromBuffer(buf, flags);
+
+		if (callback) {
+			packet._attachFreeCallback(callback);
 		}
 
-		var callback_ptr = ENETModule["Runtime_addFunction"](function (packet) {
-			self.emit("free");
-			ENETModule["Runtime_removeFunction"](callback_ptr);
-		});
-		jsapi_.packet_set_free_callback(this._pointer, callback_ptr);
-		events.EventEmitter.call(this);
-		return this;
+		return packet;
 	}
+
+	//packet from string
 	if (arguments.length > 0 && typeof arguments[0] == 'string') {
-		return new ENetPacket(new Buffer(arguments[0]), arguments[1] || 0);
+		return new ENetPacket(new Buffer(arguments[0]), arguments[1], arguments[2]);
 	}
 }
+
+ENetPacket.prototype._packetFromBuffer = function (buf, flags) {
+	var packet = this;
+	packet._pointer = enet_.packet_create(0, buf.length, flags);
+	var begin = jsapi_.packet_get_data(packet._pointer);
+	var end = begin + buf.length;
+	var c = 0,
+		i = begin;
+	for (; i < end; i++, c++) {
+		ENETModule["HEAPU8"][i] = buf.readUInt8(c);
+	}
+};
+
+ENetPacket.prototype._attachFreeCallback = function (callback) {
+	if (typeof callback !== 'function') return;
+	var packet = this;
+	if (packet._free_ptr) {
+		ENETModule["Runtime_removeFunction"](packet._free_ptr);
+	}
+	packet._free_ptr = ENETModule["Runtime_addFunction"](function (p) {
+		callback();
+		ENETModule["Runtime_removeFunction"](packet._free_ptr);
+		packet._free_ptr = 0;
+	});
+	jsapi_.packet_set_free_callback(packet._pointer, packet._free_ptr);
+};
 
 ENetPacket.prototype.data = function () {
 	var begin = jsapi_.packet_get_data(this._pointer);
@@ -466,24 +503,26 @@ function ENetPeer(pointer) {
 ENetPeer.prototype.send = function (channel, packet, callback) {
 	var peer = this;
 	if (peer._host.isOffline()) {
-		if (typeof callback === 'function') callback.call(peer, new Error("host-destroyed"));
+		if (typeof callback === 'function') callback(new Error("host-destroyed"));
 		return;
 	}
 
 	if (!peer._pointer) {
-		if (callback) callback.call(peer, new Error("Peer is disconnected"));
+		if (typeof callback === 'function') callback(new Error("Peer is disconnected"));
 		return;
 	}
+
 	if (packet instanceof Buffer) packet = new ENetPacket(packet, ENET_PACKET_FLAG_RELIABLE);
-	if (callback && callback instanceof Function) {
-		packet.on("free", function () {
-			if (callback) callback.call(peer, undefined);
-		});
+
+	if (typeof callback === 'function') {
+		packet._attachFreeCallback(callback); //a packet is only freed when it is sent out
 	}
+
 	if (enet_.peer_send(peer._pointer, channel, packet._pointer) !== 0) {
-		if (callback) callback.call(peer, new Error('Packet not queued'));
+		if (typeof callback === 'function') callback(new Error('Packet not queued'));
 	}
 };
+
 ENetPeer.prototype._delete = function (emitDisconnect) {
 	var peer = this;
 	if (!peer._pointer) return;
