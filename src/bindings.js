@@ -419,6 +419,7 @@ ENetPacket.prototype.dataLength = function () {
 };
 ENetPacket.prototype.destroy = function () {
 	enet_.packet_destroy(this._pointer);
+	this._pointer = 0;
 };
 
 ENetPacket.prototype.FLAG_RELIABLE = ENET_PACKET_FLAG_RELIABLE;
