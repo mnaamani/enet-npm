@@ -309,6 +309,34 @@ ENetHost.prototype.connect = function (address, channelCount, data, callback) {
 	}
 };
 
+ENetHost.prototype.throttleBandwidth = function () {
+	if (this.isOffline()) return;
+	enet_.host_bandwidth_throttle(this._pointer);
+	return this;
+};
+
+ENetHost.prototype.enableCompression = function () {
+	if (this._pointer) {
+		enet_.host_compress_with_range_coder(this._pointer);
+	}
+	return this;
+};
+
+ENetHost.prototype.disableCompression = function () {
+	if (this._pointer) {
+		enet_.host_compress(this._pointer, 0); //passing a 0 disables compression
+	}
+	return this;
+};
+
+ENetHost.prototype.broadcast = function (channel, packet) {
+	if (this.isOffline()) return;
+
+	if (packet instanceof Buffer) packet = new ENetPacket(packet, ENET_PACKET_FLAG_RELIABLE);
+
+	enet_.host_broadcast(this._pointer, channel, packet._pointer);
+};
+
 ENetHost.prototype.peers = function () {
 	var peer, peer_ptr, peers = [];
 	for (peer_ptr in this.connectedPeers) {
