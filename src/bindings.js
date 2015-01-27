@@ -517,12 +517,12 @@ ENetPeer.prototype.send = function (channel, packet, callback) {
 	var peer = this;
 	if (peer._host.isOffline()) {
 		if (typeof callback === 'function') callback(new Error("host-destroyed"));
-		return;
+		return peer;
 	}
 
 	if (!peer._pointer) {
 		if (typeof callback === 'function') callback(new Error("Peer is disconnected"));
-		return;
+		return peer;
 	}
 
 	if (packet instanceof Buffer) packet = new ENetPacket(packet, ENET_PACKET_FLAG_RELIABLE);
@@ -534,6 +534,7 @@ ENetPeer.prototype.send = function (channel, packet, callback) {
 	if (enet_.peer_send(peer._pointer, channel, packet._pointer) !== 0) {
 		if (typeof callback === 'function') callback(new Error('Packet not queued'));
 	}
+	return peer;
 };
 
 ENetPeer.prototype._delete = function (emitDisconnect) {
@@ -548,32 +549,40 @@ ENetPeer.prototype._delete = function (emitDisconnect) {
 
 ENetPeer.prototype.reset = function () {
 	var peer = this;
-	if (!peer._pointer) return;
-	enet_.peer_reset(this._pointer);
-	peer._delete(false);
+	if (peer._pointer) {
+		enet_.peer_reset(this._pointer);
+		peer._delete(false);
+	}
+	return peer;
 };
 ENetPeer.prototype.ping = function () {
 	var peer = this;
-	if (!peer._pointer) return;
-	enet_.peer_ping(peer._pointer);
+	if (peer._pointer) enet_.peer_ping(peer._pointer);
+	return peer;
 };
 ENetPeer.prototype.disconnect = function (data) {
 	var peer = this;
-	if (!peer._pointer) return;
-	enet_.peer_disconnect(peer._pointer, data || 0);
-	peer._delete(true);
+	if (peer._pointer) {
+		enet_.peer_disconnect(peer._pointer, data || 0);
+		peer._delete(true);
+	}
+	return peer;
 };
 ENetPeer.prototype.disconnectNow = function (data) {
 	var peer = this;
-	if (!peer._pointer) return;
-	enet_.peer_disconnect_now(peer._pointer, data || 0);
-	peer._delete(true);
+	if (peer._pointer) {
+		enet_.peer_disconnect_now(peer._pointer, data || 0);
+		peer._delete(true);
+	}
+	return peer;
 };
 ENetPeer.prototype.disconnectLater = function (data) {
 	var peer = this;
-	if (!peer._pointer) return;
-	enet_.peer_disconnect_later(peer._pointer, data || 0);
-	peer._delete(true);
+	if (peer._pointer) {
+		enet_.peer_disconnect_later(peer._pointer, data || 0);
+		peer._delete(true);
+	}
+	return peer;
 };
 ENetPeer.prototype.address = function () {
 	var peer = this;

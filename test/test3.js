@@ -9,8 +9,10 @@ server.on("connect", function (peer, data) {
 	var packet1 = new enet.Packet("Bye Bye1", 1);
 	peer.send(1, packet1, function (err) {
 		if (!err) console.log("packet1 sent");
-	});
-	peer.disconnectLater();
+	}).disconnectLater();
+	setTimeout(function () {
+		server.destroy();
+	}, 1000);
 });
 
 var client = new enet.Host(new enet.Address("0.0.0.0", 0), 32);
@@ -20,8 +22,10 @@ function doClientConnect(connectData) {
 		if (err) process.exit();
 		peer.on("disconnect", function () {
 			console.log("client got disconnect");
-		});
-		peer.on("message", function (packet, channel) {
+			setTimeout(function () {
+				client.destroy();
+			}, 1000);
+		}).on("message", function (packet, channel) {
 			console.log("got message:", packet.data().toString(), "on channel", channel);
 		});
 	});

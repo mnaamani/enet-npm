@@ -18,15 +18,11 @@ server.on("connect", function (peer, data) {
 	var packet2 = new enet.Packet("Bye Bye2", 1);
 	peer.send(1, packet1, function (err) {
 		if (!err) console.log("packet1 sent");
-	});
-	peer.disconnectLater();
-	//packet2 will not get queed because disconnectLater() was called
-	peer.send(1, packet2, function (err) {
+	}).disconnectLater().send(1, packet2, function (err) {
 		if (!err) console.log("packet2 sent");
+		//packet2 will not get queed because disconnectLater() was called
 	});
-});
-
-server.start();
+}).start();
 
 enet.createClient(function (err, client) {
 	if (err) {
@@ -41,8 +37,7 @@ enet.createClient(function (err, client) {
 			server.destroy();
 			client.destroy();
 			//process.exit();
-		});
-		peer.on("message", function (packet, channel) {
+		}).on("message", function (packet, channel) {
 			console.log("got message:", packet.data().toString(), "on channel", channel);
 		});
 	});
