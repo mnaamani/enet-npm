@@ -30,23 +30,33 @@ util.inherits(ENetPacket, events.EventEmitter);
 
 function createHost(arg, callback, host_type) {
 	var host, socket;
+	var opt = {};
+
+	if (typeof arg === "function") {
+		callback = arg;
+	} else {
+		opt = arg || opt;
+	}
+
+	callback = callback || function () {};
 
 	try {
-		host = new ENetHost(arg.address, arg.peers, arg.channels, arg.down, arg.up, host_type);
+		host = new ENetHost(opt.address, opt.peers, opt.channels, opt.down, opt.up, host_type);
 		socket = host._socket;
 
 		if (!socket) {
 			callback(new Error("socket-creation-error"));
-			return;
+			return undefined;
 		}
 
 		socket.on("error", function (e) {
+			host.emit("error", e);
 			host.destroy();
+			//a server will bind immediately we can call the callback
 			if (host_type === "server") {
-				if (typeof callback === 'function') callback(e);
-			} else {
-				host.emit("error", e);
+				callback(e);
 			}
+			//a client will only bind on outgoing connection so only emit a "error" event
 		});
 
 		socket.on("close", function () {
@@ -56,57 +66,33 @@ function createHost(arg, callback, host_type) {
 
 		if (host_type === "client" || socket._bound || socket.__receiving) {
 			setTimeout(function () {
+				//handle chrome sockets which bind immedietly
+				//if client callback as long as socket is created (even if not bound yet)
 				if (socket._bound || socket.__receiving) socket.setBroadcast(true);
 				if (typeof callback === 'function') callback(undefined, host);
 			}, 0);
 		} else {
+			//for server host callback when socket is listening
 			socket.on("listening", function () {
 				socket.setBroadcast(true);
 				if (typeof callback === 'function') callback(undefined, host);
 			});
 		}
+		//also return host in case app whats to handle errors differently
+		return host;
 
 	} catch (e) {
 		if (typeof callback === 'function') callback(e);
-		return;
+		return undefined;
 	}
 }
 
 module.exports.createServer = function (arg, callback) {
-	if (typeof callback !== "function" || !arg) {
-		throw (new Error("must provide server settings and a callback"));
-	}
-	//server must provide an ENetAddress to be able to accept incomig connections
-	if (!arg || !arg.address) {
-		if (typeof callback === 'function') callback(new Error("no-address"));
-		return;
-	}
-
-	createHost(arg, callback, "server");
+	return createHost(arg, callback, "server");
 };
 
 module.exports.createClient = function (arg, callback) {
-	var opt = {
-		peers: 32,
-		channels: 5,
-		down: 0,
-		up: 0
-	};
-
-	if (typeof arg === "function") {
-		callback = arg;
-	} else {
-		opt = arg || opt;
-	}
-
-	//make sure no address is included so enet will treat host as a client and not accept incoming connections
-	delete opt.address;
-
-	if (typeof callback !== "function") {
-		throw (new Error("must provide a callback"));
-	}
-
-	createHost(opt, callback, "client");
+	return createHost(arg, callback, "client");
 };
 
 function ENetHost(address, maxpeers, maxchannels, bw_down, bw_up, host_type) {
@@ -350,6 +336,7 @@ ENetHost.prototype.start = function (ms_interval) {
 		self._service();
 	}, ms_interval || ENET_HOST_SERVICE_INTERVAL);
 };
+
 ENetHost.prototype.stop = ENetHost.prototype.destroy;
 
 function ENetPacket() {
