@@ -1,7 +1,7 @@
 {
 	"name": "enet",
 	"version": "v0.1.10",
-	"main": "lib/bindings.js",
+	"main": "index.js",
 	"description": "The ENet Networking Library cross compiled to javascript",
 	"keywords": ["enet", "protocol", "udp", "network"],
 	"homepage": "https://github.com/mnaamani/enet-npm",
