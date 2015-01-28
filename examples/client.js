@@ -26,12 +26,7 @@ enet.createClient(function (err, client) {
 				return;
 			}
 			console.log("connected");
-
 			console.log("connected to:", peer.address());
-			var packet = new enet.Packet(new Buffer("hello, I'm the client\n"), enet.Packet.FLAG_RELIABLE);
-			peer.send(0, packet, function (err) {
-				if (err) console.log("error sending packet:", e);
-			});
 
 			peer.on("message", function (packet, chan) {
 				console.log("got message:", packet.data().toString());
@@ -42,6 +37,13 @@ enet.createClient(function (err, client) {
 				console.log("shutting down...");
 				client.destroy();
 			});
+
+			var packet = new enet.Packet(new Buffer("Hello"), enet.PACKET_FLAG.RELIABLE);
+
+			peer.send(0, packet, function (err) {
+				if (err) console.log("error sending packet:", e);
+			}).send(0, "test 123");
+
 		});
 	}
 });

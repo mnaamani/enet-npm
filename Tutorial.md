@@ -142,9 +142,9 @@ source is an object with `address` and `port` properties (source of udp packet)
 
 Packets in ENet are created from a string or Buffer., where the size of the packet must be specified.
 
-	var packet = new enet.Packet(new Buffer("hello, world"), enet.Packet.FLAG_RELIABLE);
+	var packet = new enet.Packet(new Buffer("hello, world"), enet.PACKET_FLAG.RELIABLE);
 
-enet.Packet.FLAG_RELIABLE specifies that the packet must use reliable delivery. A reliable packet is guaranteed to be delivered, and a number of retry attempts will be made until an acknowledgement is received from the peer. If a certain number of retry attempts is reached without any acknowledgement, ENet will assume the peer has disconnected and forcefully reset the connection. If this flag is not specified, the packet is assumed an unreliable packet, and no retry attempts will be made nor acknowledgements generated.
+enet.PACKET_FLAG.RELIABLE specifies that the packet must use reliable delivery. A reliable packet is guaranteed to be delivered, and a number of retry attempts will be made until an acknowledgement is received from the peer. If a certain number of retry attempts is reached without any acknowledgement, ENet will assume the peer has disconnected and forcefully reset the connection. If this flag is not specified, the packet is assumed an unreliable packet, and no retry attempts will be made nor acknowledgements generated.
 
 A packet is sent to a peer with the  peer.send() method. peer.send() accepts a channel id over which to send the packet, and a callback function. Once the packet is sent or an error occurs queuing the packet for delivery the callback will be called.
 

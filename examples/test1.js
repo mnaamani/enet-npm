@@ -24,7 +24,7 @@ var counter = 1;
 server = createHost("0.0.0.0", 5000, 5, _handlers, function (host) {
 	if (_peer) {
 		try {
-			var packet = new enet.Packet((counter++).toString(), enet.Packet.FLAG_RELIABLE);
+			var packet = new enet.Packet((counter++).toString(), enet.PACKET_FLAG.RELIABLE);
 			_peer.send(3, packet);
 		} catch (e) {
 			console.log(e);
