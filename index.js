@@ -1,1 +1,1 @@
-module.exports = require("./lib/enet.js");
+module.exports = require("./lib/bindings.js");

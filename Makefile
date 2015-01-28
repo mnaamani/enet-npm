@@ -44,9 +44,9 @@ EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
 
 module:
 	$(EMCC) src/jsapi.c $(ENET_SOURCE)/*.c -I$(ENET_SOURCE)/include \
-		--pre-js src/enet_pre.js -o lib/enet_.js $(OPTIMISE) \
+		--pre-js src/enet_pre.js -o build/enet_.js $(OPTIMISE) \
 		--js-library src/library_node_sockets.js --js-library src/library_inet.js \
 		-s TOTAL_MEMORY=1048576  -s TOTAL_STACK=409600 -s ALLOW_MEMORY_GROWTH=0 -s LINKABLE=1 $(EXPORTED_FUNCTIONS) \
 		-s RESERVED_FUNCTION_POINTERS=32
-	cat src/wrap_header.js lib/enet_.js src/wrap_footer.js src/bindings.js > lib/enet.js
-	rm lib/enet_.js
+	cat src/wrap_header.js build/enet_.js src/wrap_footer.js > build/enet.js
+	rm build/enet_.js

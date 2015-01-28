@@ -1,4 +1,4 @@
-var enet = require("../lib/enet");
+var enet = require("../index.js");
 
 var s_addr = new enet.Address("127.0.0.1", 6666);
 

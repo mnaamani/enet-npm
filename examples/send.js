@@ -1,4 +1,4 @@
-var enet = require("../lib/enet");
+var enet = require("../index.js");
 
 var send_to_ip = process.argv[2] || "127.0.0.1";
 var send_to_port = process.argv[3] || 5000;

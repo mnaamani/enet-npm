@@ -1,4 +1,4 @@
-var enet = require("../lib/enet.js");
+var enet = require("../index.js");
 
 var _peer, server, client;
 

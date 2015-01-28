@@ -1,4 +1,4 @@
-var enet = require("../lib/enet.js");
+var enet = require("../index.js");
 
 //init enet with a packet filter..
 enet.init(function (ip, port) {

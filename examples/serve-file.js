@@ -1,4 +1,4 @@
-var enet = require("../lib/enet");
+var enet = require("../index.js");
 var fs = require("fs");
 
 var server = enet.createServer({
