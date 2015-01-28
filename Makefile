@@ -37,7 +37,10 @@ EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
 	'_enet_peer_disconnect', \
 	'_enet_peer_disconnect_now', \
 	'_enet_peer_disconnect_later', \
-	'_jsapi_peer_get_address' ]"
+	'_jsapi_peer_get_address', \
+	'_jsapi_peer_get_state', \
+	'_jsapi_peer_get_incomingDataTotal', \
+	'_jsapi_peer_get_outgoingDataTotal' ]"
 
 module:
 	$(EMCC) src/jsapi.c $(ENET_SOURCE)/*.c -I$(ENET_SOURCE)/include \

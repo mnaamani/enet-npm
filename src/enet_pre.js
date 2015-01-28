@@ -3,19 +3,24 @@ Module["preRun"] = [];
 Module["preRun"].push(function () {
 	Module["jsapi"] = {};
 	Module["jsapi"]["init"] = cwrap('jsapi_init', '', ['number']);
-	Module["jsapi"]["enet_host_create_client"] = cwrap('jsapi_enet_host_create_client', 'number', ['number', 'number',
+	Module["jsapi"]["enet_host_create_client"] = cwrap('jsapi_enet_host_create_client', 'number', ['number',
+		'number',
 		'number', 'number'
 	]);
-	Module["jsapi"]["enet_host_create"] = cwrap('jsapi_enet_host_create', 'number', ['number', 'number', 'number',
+	Module["jsapi"]["enet_host_create"] = cwrap('jsapi_enet_host_create', 'number', ['number', 'number',
+		'number',
 		'number', 'number', 'number'
 	]);
 	Module["jsapi"]["host_get_socket"] = cwrap('jsapi_host_get_socket', "number", ['number']);
 	Module["jsapi"]["host_get_receivedAddress"] = cwrap("jsapi_host_get_receivedAddress", 'number', ['number']);
-	Module["jsapi"]["enet_host_connect"] = cwrap("jsapi_enet_host_connect", "number", ['number', 'number', 'number',
+	Module["jsapi"]["enet_host_connect"] = cwrap("jsapi_enet_host_connect", "number", ['number', 'number',
+		'number',
 		'number', 'number'
 	]);
 	Module["jsapi"]["packet_get_data"] = cwrap("jsapi_packet_get_data", "number", ["number"]);
-	Module["jsapi"]["packet_set_free_callback"] = cwrap("jsapi_packet_set_free_callback", "", ["number", "number"]);
+	Module["jsapi"]["packet_set_free_callback"] = cwrap("jsapi_packet_set_free_callback", "", ["number",
+		"number"
+	]);
 	Module["jsapi"]["packet_get_dataLength"] = cwrap("jsapi_packet_get_dataLength", "number", ["number"]);
 	Module["jsapi"]["event_new"] = cwrap('jsapi_event_new', 'number', []);
 	Module["jsapi"]["event_free"] = cwrap('jsapi_event_free', '', ['number']);
@@ -27,6 +32,13 @@ Module["preRun"].push(function () {
 	Module["jsapi"]["address_get_host"] = cwrap('jsapi_address_get_host', 'number', ['number']);
 	Module["jsapi"]["address_get_port"] = cwrap('jsapi_address_get_port', 'number', ['number']);
 	Module["jsapi"]["peer_get_address"] = cwrap('jsapi_peer_get_address', 'number', ['number']);
+	Module["jsapi"]["peer_get_state"] = cwrap('jsapi_peer_get_state', 'number', ['number']);
+	Module["jsapi"]["peer_get_incomingDataTotal"] = cwrap('jsapi_peer_get_incomingDataTotal', 'number', [
+		'number'
+	]);
+	Module["jsapi"]["peer_get_outgoingDataTotal"] = cwrap('jsapi_peer_get_outgoingDataTotal', 'number', [
+		'number'
+	]);
 
 	Module["libenet"] = {};
 	Module["libenet"]["host_service"] = cwrap("enet_host_service", 'number', ['number', 'number', 'number']);

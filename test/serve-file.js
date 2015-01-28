@@ -16,13 +16,15 @@ var server = enet.createServer({
 	server.on("connect", function (peer, data) {
 		console.log("connected");
 		var file = fs.createReadStream(process.argv[2]);
+		var stream = peer.createWriteStream(0);
 
 		file.on("end", function () {
-			console.log("served file.");
+			console.log("served file. sent:", peer.outgoingDataTotal(), "bytes");
 			peer.disconnectLater();
 		});
 
-		file.pipe(peer.createWriteStream(0));
+		file.pipe(stream);
+
 	});
 
 	server.start();

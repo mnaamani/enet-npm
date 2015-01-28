@@ -541,6 +541,40 @@ function ENetPeer(pointer) {
 	this.setMaxListeners(0);
 }
 
+var PEER_STATE = module.exports.PEER_STATE = {
+	DISCONNECTED: 0,
+	CONNECTING: 1,
+	ACKNOWLEDGING_CONNECT: 2,
+	CONNECTION_PENDING: 3,
+	CONNECTION_SUCCEEDED: 4,
+	CONNECTED: 5,
+	DISCONNECT_LATER: 6,
+	DISCONNECTING: 7,
+	ACKNOWLEDGING_DISCONNECT: 8,
+	ZOMBIE: 9
+};
+
+ENetPeer.prototype.state = function () {
+	if (this._pointer) {
+		return jsapi_.peer_get_state(this._pointer);
+	}
+	return PEER_STATE.DISCONNECTED;
+};
+
+ENetPeer.prototype.incomingDataTotal = function () {
+	if (this._pointer) {
+		return jsapi_.peer_get_incomingDataTotal(this._pointer);
+	}
+	return 0;
+};
+
+ENetPeer.prototype.outgoingDataTotal = function () {
+	if (this._pointer) {
+		return jsapi_.peer_get_outgoingDataTotal(this._pointer);
+	}
+	return 0;
+};
+
 ENetPeer.prototype.send = function (channel, packet, callback) {
 	var peer = this;
 	if (peer._host.isOffline()) {

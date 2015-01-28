@@ -8,16 +8,33 @@ enet.createClient(function (err, host) {
 		console.log(err);
 		return;
 	}
-	console.log("client ready");
-	host.on("connect", function (peer, data) {
-		console.log("connected to:", peer.address().address);
-		peer.createReadStream(0).pipe(fs.createWriteStream("./got-file.txt"));
-		peer.on("disconnect", function (data) {
-			console.log("disconnected from:", peer.address().address);
-			host.stop();
-		});
-	});
+	console.log("client ready, connecting...");
 
-	host.connect(s_addr, 1, 0);
+	var peer = host.connect(s_addr, 1, 0);
+
+	var interval = setInterval(function () {
+		//wait until we are in connected state
+		if (peer.state() === enet.PEER_STATE.CONNECTED) {
+			clearInterval(interval);
+			clearTimeout(timeout);
+			console.log("connected to:", peer.address().address);
+			var stream = peer.createReadStream(0);
+			stream.pipe(fs.createWriteStream("./got-file.txt"));
+			stream.on("end", function () {
+				console.log("disconnected.");
+				host.stop();
+			});
+		}
+	}, 200);
+	peer.on("disconnect", function () {
+		host.stop();
+	});
+	var timeout = setTimeout(function () {
+		if (interval) {
+			clearInterval(interval);
+			console.log("timeout connecting to server!");
+			peer.disconnect();
+		}
+	}, 10000);
 
 });

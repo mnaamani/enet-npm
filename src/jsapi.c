@@ -9,39 +9,39 @@
 void jsapi_init(int (ENET_CALLBACK * packet_filter) (ENetHost* host)){
   if(packet_filter){
 	ENetCallbacks callbacks = { NULL, NULL, NULL, packet_filter };
-        enet_initialize_with_callbacks(ENET_VERSION, &callbacks);
- 	return;
+		enet_initialize_with_callbacks(ENET_VERSION, &callbacks);
+	 return;
   }
   enet_initialize();
 }
 
 ENetHost* jsapi_enet_host_create(unsigned int host, int port,int maxpeers, int maxchannels, int bw_down, int bw_up){
-    ENetAddress address;
-    address.host = host;
-    address.port = port;
+	ENetAddress address;
+	address.host = host;
+	address.port = port;
 
-    return enet_host_create (& address     /* the address to bind the server host to */,
-                               maxpeers    /* allow up to maxpeers clients and/or outgoing connections */,
-                               maxchannels /* allow up to maxchannels channels to be used, 0,1,...maxcahnnels*/,
-                               bw_down    /* assume bw_in (Bytes/s) of incoming bandwidth */,
-                               bw_up   /* assume bw_out (Bytes/s) of outgoing bandwidth */);
+	return enet_host_create (& address     /* the address to bind the server host to */,
+							   maxpeers    /* allow up to maxpeers clients and/or outgoing connections */,
+							   maxchannels /* allow up to maxchannels channels to be used, 0,1,...maxcahnnels*/,
+							   bw_down    /* assume bw_in (Bytes/s) of incoming bandwidth */,
+							   bw_up   /* assume bw_out (Bytes/s) of outgoing bandwidth */);
 }
 
 ENetHost* jsapi_enet_host_create_client(int maxconn, int maxchannels, int bw_down, int bw_up){
-    ENetHost* host = enet_host_create (NULL      /*create a client - doesn't accept incoming connections*/,
-                               maxconn    /* allow up to maxconn outgoing connections */,
-                               maxchannels /* allow up to maxchannels channels to be used, 0 and 1 */,
-                               bw_down    /* assume bw_down (Bytes/s) incoming bandwidth */,
-                               bw_up   /* assume bw_up (Bytes/s) outgoing bandwidth */);
-    host -> isClient = 1;
-    return host;
+	ENetHost* host = enet_host_create (NULL      /*create a client - doesn't accept incoming connections*/,
+							   maxconn    /* allow up to maxconn outgoing connections */,
+							   maxchannels /* allow up to maxchannels channels to be used, 0 and 1 */,
+							   bw_down    /* assume bw_down (Bytes/s) incoming bandwidth */,
+							   bw_up   /* assume bw_up (Bytes/s) outgoing bandwidth */);
+	host -> isClient = 1;
+	return host;
 }
 
 ENetPeer* jsapi_enet_host_connect(ENetHost* host, unsigned int destinationHost, int port, int channelCount, int data){
-    ENetAddress address;
-    address.host = destinationHost;
-    address.port = port;
-    return enet_host_connect(host,&address,channelCount,data);
+	ENetAddress address;
+	address.host = destinationHost;
+	address.port = port;
+	return enet_host_connect(host,&address,channelCount,data);
 }
 
 //ENetEvent - helpers
@@ -68,7 +68,7 @@ void* jsapi_event_get_data(ENetEvent* event){
 }
 //ENetAddress - helpers
 enet_uint32* jsapi_address_get_host(ENetAddress* address){
-  //emscripten can only return signed int using the ccall so 
+  //emscripten can only return signed int using the ccall so
   //we will return a pointer to the unsigned int and grab it
   //directly from memory!
  return &address->host;
@@ -85,7 +85,7 @@ int jsapi_packet_get_dataLength(ENetPacket* packet){
   return packet->dataLength;
 }
 void jsapi_packet_set_free_callback(ENetPacket *packet, ENetPacketFreeCallback callback){
-    packet->freeCallback = callback;
+	packet->freeCallback = callback;
 }
 //ENetHost - helpers
 ENetAddress* jsapi_host_get_receivedAddress(ENetHost *host){
@@ -117,41 +117,12 @@ int jsapi_peer_get_channelCount(ENetPeer* peer){
   return peer->channelCount;
 }
 
-/*
-ENetPacket* cap_telex_packet(unsigned char *data,int len){
-    unsigned char terminator;
-    int r;
-    jsmntok_t tokens[MAXTOKENS_PER_TELEX];
-    terminator = data[len];
-    data[len]=NULL;
-    jsmn_parser jsmn_parser_instance;
-    jsmn_init(&jsmn_parser_instance);
-    r = jsmn_parse(&jsmn_parser_instance, data, tokens, sizeof(tokens));
-    data[len]=terminator;
-    if(r == JSMN_SUCCESS && tokens[0].type==JSMN_OBJECT){
-        return enet_packet_create(data, len, ENET_PACKET_FLAG_NO_ALLOCATE);
-    }
-    return NULL;
+ENetPeerState jsapi_peer_get_state(ENetPeer* peer){
+	return peer->state;
 }
-
-int dump_raw_packets(ENetHost* host){
-
-    struct in_addr A;
-    A.s_addr = host->receivedAddress.host;
-    printf("[RAW] udp packet from: %s:%d length:%d \n",inet_ntoa(A),host -> receivedAddress.port,host->receivedDataLength);
-
-    char data[1500];
-    memcpy(data,host->receivedData,host->receivedDataLength);
-    data[host->receivedDataLength]=0;
-    printf("[RAW] udp packet data:%s \n",data);
-
-    ENetPacket *telex = cap_telex_packet(host->receivedData,host->receivedDataLength);
-    if(telex){
-        puts("[RAW] last udp packet looked like a telex!");
-        enet_packet_destroy(telex);
-        //return 0;//stop further processing...
-    	return 1;//incase we are wrong allow packet to get through
-    }
-    return 1;
+enet_uint32   jsapi_peer_get_incomingDataTotal(ENetPeer* peer){
+	return peer->incomingDataTotal;
 }
-*/
+enet_uint32   jsapi_peer_get_outgoingDataTotal(ENetPeer* peer){
+	return peer->outgoingDataTotal;
+}
