@@ -1,6 +1,5 @@
 EMCC=`./find-emcc.py`/emcc
-#closure generates code which uses eval() - disabled for chrome-ext
-OPTIMISE= -O2 --closure 0 -s ASM_JS=1 --llvm-opts 1 --memory-init-file 0
+OPTIMISE= -O2 --closure 1 -s ASM_JS=1 --llvm-opts 1 --memory-init-file 0
 ENET_SOURCE=./src/enet-1.3.5
 
 EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
@@ -47,6 +46,6 @@ module:
 		--pre-js src/enet_pre.js -o build/enet_.js $(OPTIMISE) \
 		--js-library src/library_node_sockets.js --js-library src/library_inet.js \
 		-s TOTAL_MEMORY=1048576  -s TOTAL_STACK=409600 -s ALLOW_MEMORY_GROWTH=0 -s LINKABLE=1 $(EXPORTED_FUNCTIONS) \
-		-s RESERVED_FUNCTION_POINTERS=32
+		-s RESERVED_FUNCTION_POINTERS=32 -s CHROME_SOCKETS=1
 	cat src/wrap_header.js build/enet_.js src/wrap_footer.js > build/enet.js
 	rm build/enet_.js

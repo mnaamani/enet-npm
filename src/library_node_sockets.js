@@ -13,18 +13,18 @@ mergeInto(LibraryManager.library, {
         return (addr & 0xff) + '.' + ((addr >> 8) & 0xff) + '.' + ((addr >> 16) & 0xff) + '.' + ((addr >> 24) & 0xff)
     },
     DGRAM:function(){
-        if(typeof require !== 'undefined') return require("dgram");//node or browserified
 #if CHROME_SOCKETS
-        if(window["chrome"] && window["chrome"]["socket"]) return NodeSockets.ChromeDgram();
+        if((typeof window !== 'undefined') && window["chrome"] && window["chrome"]["socket"]) return NodeSockets.ChromeDgram();
 #endif
-        assert(false,"no dgram sockets backend found");
+        if(typeof require !== 'undefined') return require("dgram");//node or browserified
+        assert(false,"no dgram sockets backend found!");
     },
     NET:function(){
-        if(typeof require !== 'undefined') return require("net");//node or browserified
 #if CHROME_SOCKETS
-        if(chrome && chrome.socket) return NodeSockets.ChromeNet();
+        if((typeof window !== 'undefined') && window["chrome"] && window["chrome"]["socket"]) return NodeSockets.ChromeNet();
 #endif
-        assert(false);
+        if(typeof require !== 'undefined') return require("net");//node or browserified
+        assert(false, "no tcp socket backend found!");
     },
     buffer2uint8array: function(buffer){
       var arraybuffer = new ArrayBuffer(buffer.length);
@@ -51,6 +51,7 @@ mergeInto(LibraryManager.library, {
 
         function UDPSocket(msg_evt_cb){
             var self = this;
+            self._is_chrome_socket = true;
             self._event_listeners = {};
 
             self["on"]("listening",function(){
@@ -639,11 +640,14 @@ mergeInto(LibraryManager.library, {
                         //connected dgram socket will only accept packets from info.host:info.port
                         if(info.host !== rinfo.address || info.port !== rinfo.port) return;
                     }
-#if CHROME_SOCKETS
-                    var buf = msg;
-#else
-                    var buf = msg instanceof ArrayBuffer ? new Uint8Array(msg) : NodeSockets.buffer2uint8array(msg);
-#endif                    
+                    var buf;
+
+                    if(info.socket._is_chrome_socket) {
+                          buf = msg;
+                    }else{
+                          buf = msg instanceof ArrayBuffer ? new Uint8Array(msg) : NodeSockets.buffer2uint8array(msg);
+                    }
+
                     buf.from= {
                         host: rinfo["address"],
                         port: rinfo["port"]
@@ -652,11 +656,12 @@ mergeInto(LibraryManager.library, {
                });
                
                info.sender = function(buf,ip,port){
-#if CHROME_SOCKETS
-                    var buffer = buf;
-#else
-                    var buffer = new Buffer(buf);
-#endif
+                    var buffer;
+                    if(info.socket._is_chrome_socket) {
+                         buffer = buf;
+                    }else{
+                         buffer = new Buffer(buf);
+                    }
                     info.socket["send"](buffer,0,buffer.length,port,ip);
                }
           }

@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+  "name": "ENET-Test",
+  "description":"ENet in chrome app, using chrome.socket",
+  "version":"0.1",
+  "permissions":[
+    {
+    "socket": ["udp-send-to:*:*","udp-bind"]}
+  ],
+  "app":{
+	"background":{
+	  "scripts":["background.js"]
+	}
+  }
+}
