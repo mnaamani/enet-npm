@@ -1,5 +1,6 @@
-#include <enet/enet.h>
 #include <string.h>
+#include <time.h>
+#include <enet/enet.h>
 #include <stdio.h>
 #include <emscripten/emscripten.h>
 #include <sys/socket.h>
@@ -34,6 +35,99 @@ ENetHost* jsapi_enet_host_create_client(int maxconn, int maxchannels, int bw_dow
 							   bw_down    /* assume bw_down (Bytes/s) incoming bandwidth */,
 							   bw_up   /* assume bw_up (Bytes/s) outgoing bandwidth */);
 	host -> isClient = 1;
+	return host;
+}
+
+ENetHost *
+jsapi_enet_server_from_socket (ENetSocket sock, const ENetAddress * address, size_t peerCount, size_t channelLimit, enet_uint32 incomingBandwidth, enet_uint32 outgoingBandwidth)
+{
+	ENetHost * host;
+	ENetPeer * currentPeer;
+
+	if (peerCount > ENET_PROTOCOL_MAXIMUM_PEER_ID)
+	  return NULL;
+
+	host = (ENetHost *) enet_malloc (sizeof (ENetHost));
+	if (host == NULL)
+	  return NULL;
+	memset (host, 0, sizeof (ENetHost));
+
+	host -> peers = (ENetPeer *) enet_malloc (peerCount * sizeof (ENetPeer));
+	if (host -> peers == NULL)
+	{
+	   enet_free (host);
+
+	   return NULL;
+	}
+	memset (host -> peers, 0, peerCount * sizeof (ENetPeer));
+
+	host -> socket = sock;
+	if (host -> socket == ENET_SOCKET_NULL || (address != NULL && enet_socket_bind (host -> socket, address) < 0))
+	{
+	   enet_free (host -> peers);
+	   enet_free (host);
+
+	   return NULL;
+	}
+	//bind the socket -- not really.. add event handlers, but don't call bind()
+	if (address != NULL)
+	  host -> address = * address;
+
+	if (! channelLimit || channelLimit > ENET_PROTOCOL_MAXIMUM_CHANNEL_COUNT)
+	  channelLimit = ENET_PROTOCOL_MAXIMUM_CHANNEL_COUNT;
+	else
+	if (channelLimit < ENET_PROTOCOL_MINIMUM_CHANNEL_COUNT)
+	  channelLimit = ENET_PROTOCOL_MINIMUM_CHANNEL_COUNT;
+
+	host -> randomSeed = (enet_uint32) time(NULL) + (enet_uint32) (size_t) host;
+	host -> randomSeed = (host -> randomSeed << 16) | (host -> randomSeed >> 16);
+	host -> channelLimit = channelLimit;
+	host -> incomingBandwidth = incomingBandwidth;
+	host -> outgoingBandwidth = outgoingBandwidth;
+	host -> bandwidthThrottleEpoch = 0;
+	host -> recalculateBandwidthLimits = 0;
+	host -> mtu = ENET_HOST_DEFAULT_MTU;
+	host -> peerCount = peerCount;
+	host -> commandCount = 0;
+	host -> bufferCount = 0;
+	host -> checksum = NULL;
+	host -> receivedAddress.host = ENET_HOST_ANY;
+	host -> receivedAddress.port = 0;
+	host -> receivedData = NULL;
+	host -> receivedDataLength = 0;
+
+	host -> totalSentData = 0;
+	host -> totalSentPackets = 0;
+	host -> totalReceivedData = 0;
+	host -> totalReceivedPackets = 0;
+
+	host -> compressor.context = NULL;
+	host -> compressor.compress = NULL;
+	host -> compressor.decompress = NULL;
+	host -> compressor.destroy = NULL;
+	host -> isClient = 0;
+
+	enet_list_clear (& host -> dispatchQueue);
+
+	for (currentPeer = host -> peers;
+		 currentPeer < & host -> peers [host -> peerCount];
+		 ++ currentPeer)
+	{
+	   currentPeer -> host = host;
+	   currentPeer -> incomingPeerID = currentPeer - host -> peers;
+	   currentPeer -> outgoingSessionID = currentPeer -> incomingSessionID = 0xFF;
+	   currentPeer -> data = NULL;
+
+	   enet_list_clear (& currentPeer -> acknowledgements);
+	   enet_list_clear (& currentPeer -> sentReliableCommands);
+	   enet_list_clear (& currentPeer -> sentUnreliableCommands);
+	   enet_list_clear (& currentPeer -> outgoingReliableCommands);
+	   enet_list_clear (& currentPeer -> outgoingUnreliableCommands);
+	   enet_list_clear (& currentPeer -> dispatchedCommands);
+
+	   enet_peer_reset (currentPeer);
+	}
+
 	return host;
 }
 

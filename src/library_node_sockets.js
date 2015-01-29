@@ -634,7 +634,7 @@ mergeInto(LibraryManager.library, {
           if(info.dgram){
                info.bound = true;
                info.hasData = function(){return info.inQueue.length>0}
-               info.socket["bind"](info.local_port||0,info.local_host||undefined);
+               if(!info.skipBind) info.socket["bind"](info.local_port||0,info.local_host||undefined);
                info.socket["on"]('message',function(msg,rinfo){
                     if(info.host && info.connected){
                         //connected dgram socket will only accept packets from info.host:info.port

@@ -1,5 +1,6 @@
 EMCC=`./find-emcc.py`/emcc
-OPTIMISE= -O2 --closure 1 -s ASM_JS=1 --llvm-opts 1 --memory-init-file 0
+#todo - refactor src/library_inet.js and src/library_node_sockets.js to handle closure compiler before enabling it
+OPTIMISE= -O2 --closure 0 -s ASM_JS=1 --llvm-opts 1 --memory-init-file 0
 ENET_SOURCE=./src/enet-1.3.5
 
 EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
@@ -14,6 +15,7 @@ EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
 	'_jsapi_host_get_receivedAddress', \
 	'_jsapi_host_get_socket', \
 	'_jsapi_enet_host_create', \
+	'_jsapi_enet_server_from_socket', \
 	'_jsapi_enet_host_create_client', \
 	'_jsapi_enet_host_connect', \
 	'_enet_packet_create', \
