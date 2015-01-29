@@ -189,7 +189,10 @@ mergeInto(LibraryManager.library, {
      if(stream) {
        if(stream.socket){
          if(stream.interval) clearInterval(stream.interval);
-         if(typeof stream.socket["close"] == "function") stream.socket["close"]();//udp sockets, tcp listening sockets
+         if(typeof stream.socket["close"] == "function"){
+             if(stream._dgram_on_message) stream.socket["removeListener"]("message",stream._dgram_on_message);
+             if(!stream.skipBind) stream.socket["close"]();//udp sockets, tcp listening sockets
+         }
          if(typeof stream.socket["end"] == "function") stream.socket["end"]();//tcp connections
          FS.closeStream(stream.fd);
          return 0;
@@ -199,7 +202,7 @@ mergeInto(LibraryManager.library, {
             stream.stream_ops.close(stream);
           }
         } catch (e) {
-          throw e;
+          throw e; // why are we throwing it again?
         } finally {
           FS.closeStream(stream.fd);
         }
@@ -635,7 +638,7 @@ mergeInto(LibraryManager.library, {
                info.bound = true;
                info.hasData = function(){return info.inQueue.length>0}
                if(!info.skipBind) info.socket["bind"](info.local_port||0,info.local_host||undefined);
-               info.socket["on"]('message',function(msg,rinfo){
+	       info._dgram_on_message = function(msg,rinfo){
                     if(info.host && info.connected){
                         //connected dgram socket will only accept packets from info.host:info.port
                         if(info.host !== rinfo.address || info.port !== rinfo.port) return;
@@ -653,7 +656,8 @@ mergeInto(LibraryManager.library, {
                         port: rinfo["port"]
                     }
                     info.inQueue.push(buf);
-               });
+               };
+               info.socket["on"]('message',info._dgram_on_message);
                
                info.sender = function(buf,ip,port){
                     var buffer;

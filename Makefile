@@ -14,9 +14,10 @@ EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
 	'_enet_host_compress', \
 	'_jsapi_host_get_receivedAddress', \
 	'_jsapi_host_get_socket', \
-	'_jsapi_enet_host_create', \
-	'_jsapi_enet_server_from_socket', \
+	'_jsapi_enet_host_create_server', \
 	'_jsapi_enet_host_create_client', \
+	'_jsapi_enet_host_from_socket', \
+	'_jsapi_enet_host_bind', \
 	'_jsapi_enet_host_connect', \
 	'_enet_packet_create', \
 	'_enet_packet_destroy', \

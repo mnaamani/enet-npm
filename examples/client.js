@@ -38,11 +38,11 @@ enet.createClient(function (err, client) {
 				client.destroy();
 			});
 
-			var packet = new enet.Packet(new Buffer("Hello"), enet.PACKET_FLAG.RELIABLE);
+			var packet = new enet.Packet(new Buffer("Hello\n"), enet.PACKET_FLAG.RELIABLE);
 
 			peer.send(0, packet, function (err) {
 				if (err) console.log("error sending packet:", e);
-			}).send(0, "test 123");
+			}).send(0, "test 123...\n");
 
 		});
 	}

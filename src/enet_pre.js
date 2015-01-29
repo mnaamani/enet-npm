@@ -7,13 +7,15 @@ this["Module"] = Module = {
 			'number',
 			'number', 'number'
 		]);
-		Module["jsapi"]["enet_host_create"] = cwrap('jsapi_enet_host_create', 'number', ['number', 'number',
+		Module["jsapi"]["enet_host_create_server"] = cwrap('jsapi_enet_host_create_server', 'number', ['number',
+			'number',
 			'number', 'number', 'number', 'number'
 		]);
-		Module["jsapi"]["enet_server_from_socket"] = cwrap('jsapi_enet_server_from_socket', 'number', ['number',
+		Module["jsapi"]["enet_host_from_socket"] = cwrap('jsapi_enet_host_from_socket', 'number', ['number',
 			'number', 'number',
 			'number', 'number', 'number', 'number'
 		]);
+		Module["jsapi"]["enet_host_bind"] = cwrap('jsapi_enet_host_bind', '', ['number']);
 		Module["jsapi"]["host_get_socket"] = cwrap('jsapi_host_get_socket', "number", ['number']);
 		Module["jsapi"]["host_get_receivedAddress"] = cwrap("jsapi_host_get_receivedAddress", 'number', [
 			'number'
@@ -70,8 +72,8 @@ this["Module"] = Module = {
 		]);
 
 		Module["FS"] = FS;
-		Module["GetSocket"] = function (fd) {
-			return (Module["FS"].streams[fd].socket);
+		Module["GetStream"] = function (fd) {
+			return (Module["FS"].streams[fd]);
 		};
 		Module["CreateStream"] = FS.createStream;
 		Module["Runtime_addFunction"] = Runtime.addFunction;
