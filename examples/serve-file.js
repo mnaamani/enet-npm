@@ -13,17 +13,26 @@ var server = enet.createServer({
 		return;
 	}
 	console.log("server ready");
+	server.enableCompression();
 	server.on("connect", function (peer, data) {
-		console.log("connected");
+		console.log("sending file:", process.argv[2]);
+
 		var file = fs.createReadStream(process.argv[2]);
+		//always create writestreams after connection is made
 		var stream = peer.createWriteStream(0);
 
+		file.pipe(stream);
+
 		file.on("end", function () {
-			console.log("served file. sent:", peer.outgoingDataTotal(), "bytes");
+			//note: outgoingDataTotal is not only the size of the file.
+			//It includes total data exchanged with peer
+			console.log("served file.\n%s bytes trasmitted to peer.", peer.outgoingDataTotal());
 			peer.disconnectLater();
 		});
 
-		file.pipe(stream);
+		stream.on("error", function (e) {
+			console.log("stream error.", e);
+		});
 
 	});
 

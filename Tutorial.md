@@ -183,7 +183,7 @@ A packet is sent to a peer with the  peer.send() method. peer.send() accepts a c
 
 ### Streams
 
-To communicate with a peer using the streams API we can turn a channel into a readable stream and writeable stream.
+To communicate with a peer using the streams API we can turn a channel into a readable stream or writeable stream.
 
 For example use createReadStream method to create a readable stream:
 
@@ -200,4 +200,7 @@ A writeable stream can be created using createWriteStream method of peer:
 
 will send the contents of data.txt file to the peer on channel 2
 
-Streams will emit the 'end' event when the peer disconnects.
+A duplex stream can also be created with peer.createDuplexStream() method
+
+Ideally streams should be created after a peer is in CONNECTED state. (in the connect event listeners)
+If you try to read from or write to a stream of a disconnected peer it will raise the error event on the stream.
