@@ -140,17 +140,21 @@ source is an object with `address` and `port` properties (source of udp packet)
 
 ### Sending a packet to an ENet peer
 
-Packets in ENet are created from a string or Buffer., where the size of the packet must be specified.
+Packets in ENet are created from a string or Buffer.
 
 	var packet = new enet.Packet(new Buffer("hello, world"), enet.PACKET_FLAG.RELIABLE);
 
+or
+
+	var packet = new enet.Packet("hello");
+
 enet.PACKET_FLAG.RELIABLE specifies that the packet must use reliable delivery. A reliable packet is guaranteed to be delivered, and a number of retry attempts will be made until an acknowledgement is received from the peer. If a certain number of retry attempts is reached without any acknowledgement, ENet will assume the peer has disconnected and forcefully reset the connection. If this flag is not specified, the packet is assumed an unreliable packet, and no retry attempts will be made nor acknowledgements generated.
 
-A packet is sent to a peer with the  peer.send() method. peer.send() accepts a channel id over which to send the packet, and a callback function. Once the packet is sent or an error occurs queuing the packet for delivery the callback will be called.
+A packet is sent to a peer with the  peer.send() method. peer.send() accepts a channel id over which to send the packet, the packet, and a callback function. Once the packet is sent or an error occurs queuing the packet for delivery the callback will be called.
 
 	peer.send(0 /*channel*/, packet, function(err){
 		//callback called when packet is sent or on failure to que packet
-		//If packet is not sent this
+		//If packet is queued but not sent this callback will not be called.
 	});
 
 
@@ -186,7 +190,7 @@ For example use createReadStream method to create a readable stream:
 	var stream = peer.createReadStream(0);
 	stream.pipe(process.stdout);
 
-will pipe the data coming in on channel 0 with peer to stdout.
+will pipe the data coming in on channel 0 from peer to stdout.
 
 A writeable stream can be created using createWriteStream method of peer:
 
@@ -195,3 +199,5 @@ A writeable stream can be created using createWriteStream method of peer:
 	file.pipe(stream);
 
 will send the contents of data.txt file to the peer on channel 2
+
+Streams will emit the 'end' event when the peer disconnects.
