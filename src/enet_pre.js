@@ -71,11 +71,6 @@ this["Module"] = Module = {
 			'number'
 		]);
 
-		Module["FS"] = FS;
-		Module["GetStream"] = function (fd) {
-			return (Module["FS"].streams[fd]);
-		};
-		Module["CreateStream"] = FS.createStream;
 		Module["Runtime_addFunction"] = Runtime.addFunction;
 		Module["Runtime_removeFunction"] = Runtime.removeFunction;
 		Module["HEAPU8"] = HEAPU8;

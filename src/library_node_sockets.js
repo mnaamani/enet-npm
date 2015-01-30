@@ -3,8 +3,27 @@
   // nonblocking
   // ==========================================================================
 mergeInto(LibraryManager.library, {
+  $NodeSockets__postset: 'Module["getStreamSocket"]=NodeSockets.getStreamSocket;'+
+                         'Module["createStreamFromSocket"]=NodeSockets.createStreamFromSocket;',
   $NodeSockets__deps: ['__setErrNo', '$ERRNO_CODES'],
   $NodeSockets: {
+    getStreamSocket: function(fd){
+    	var stream = FS.getStream(fd);
+	return stream ? stream.socket : undefined;
+    },
+    createStreamFromSocket: function(socket){
+      var stream = FS.createStream({
+	addrlen: {{{ C_STRUCTS.sockaddr_in.__size__ }}},
+	connected: false,
+	stream: false,
+	dgram: true,
+	socket: socket,
+	bound: false,
+	inQueue: []
+      });
+      stream.skipBind = true;
+      return stream.fd;
+    },
     inet_aton_raw: function(str) {
         var b = str.split(".");
         return (Number(b[0]) | (Number(b[1]) << 8) | (Number(b[2]) << 16) | (Number(b[3]) << 24)) >>> 0;
@@ -78,7 +97,7 @@ mergeInto(LibraryManager.library, {
                     //todo - error detection.
                     if(info["resultCode"] > 0){
                         buff = new Uint8Array(info["data"]);
-                        self.emit("message",buff,{"address":info["address"],"port":info["port"],"size":info["data"]["byteLength"],"family":"IPv4"});
+                        self["emit"]("message",buff,{"address":info["address"],"port":info["port"],"size":info["data"]["byteLength"],"family":"IPv4"});
                     }
                 });
             }
@@ -91,7 +110,7 @@ mergeInto(LibraryManager.library, {
             this._event_listeners[evt] ? this._event_listeners[evt].push(callback) : this._event_listeners[evt]=[callback];
         };
 
-        UDPSocket.prototype.emit = function(e){
+        UDPSocket.prototype["emit"] = function(e){
             //used internally to fire events
             //'apply' event handler function  to 'this' channel pass eventname 'e' and arguemnts.slice(1)
             var self = this;
@@ -104,7 +123,7 @@ mergeInto(LibraryManager.library, {
             }
         };
 
-        UDPSocket.prototype.close = function(){
+        UDPSocket.prototype["close"] = function(){
             //Close the underlying socket and stop listening for data on it.
             if(!self.__socket_id) return;
             window["chrome"]["socket"]["destroy"](self.__socket_id);
@@ -112,7 +131,7 @@ mergeInto(LibraryManager.library, {
             delete self.__poll_interval;
         };
 
-        UDPSocket.prototype.bind = function(port,address){
+        UDPSocket.prototype["bind"] = function(port,address){
             var self = this;
             address = address || "0.0.0.0";
             port = port || 0;
@@ -124,21 +143,24 @@ mergeInto(LibraryManager.library, {
                     window["chrome"]["socket"]["getInfo"](self.__socket_id,function(info){
                       self.__local_address = info["localAddress"];
                       self.__local_port = info["localPort"];
-                      self.emit("listening");
+                      self["emit"]("listening");
                     });
                 });
             });
         };
 
-        UDPSocket.prototype.address = function(){
+        UDPSocket.prototype["address"] = function(){
             return({"address":this.__local_address,"port":this.__local_port});
         };
 
-        UDPSocket.prototype.setBroadcast = function(flag){
+        UDPSocket.prototype["setBroadcast"] = function(flag){
             //do chrome udp sockets support broadcast?
+#if SOCKET_DEBUG
+            console.log("setting broadcast on chrome socket to:",flag);
+#endif
         };
 
-        UDPSocket.prototype.send = function(buff, offset, length, port, address, callback){
+        UDPSocket.prototype["send"] = function(buff, offset, length, port, address, callback){
             var self = this;
             var job = {
                     socket_id:self.__socket_id,
@@ -593,7 +615,9 @@ mergeInto(LibraryManager.library, {
     },
     
     setsockopt: function(d, level, optname, optval, optlen) {
-        //console.log('ignoring setsockopt command');
+#if SOCKET_DEBUG
+        console.log('ignoring setsockopt command');
+#endif
         return 0;
     },
     
