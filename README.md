@@ -1,4 +1,5 @@
-### enet: emscripten compiled [enet networking library](http://enet.bespin.org/)
+### enet
+emscripten compiled [enet networking library](http://enet.bespin.org/)
 
 ENet's purpose is to provide a relatively thin, simple and robust network communication
 layer on top of UDP (User Datagram Protocol). The primary feature it provides is optional
@@ -6,9 +7,9 @@ reliable, in-order delivery of packets.
 
 #### npm package
 
-enet is published in the [npm registry](https://npmjs.org/package/enet), to install it:
+enet is published in the [npm registry](https://npmjs.org/package/enet), to install it into your project:
 
-    npm install enet
+	npm install enet
 
 #### Documentation
 
@@ -20,7 +21,7 @@ enet npm module is written by Mokhtar Naamani <mokhtar.naamani@gmail.com>
 and is licensed under the [MIT
 license](http://opensource.org/licenses/MIT):
 
-> Copyright &copy; 2013 Mokhtar Naamani.
+> Copyright &copy; 2013-2015 Mokhtar Naamani.
 >
 > Permission is hereby granted, free of charge, to any person
 > obtaining a copy of this software and associated documentation files
