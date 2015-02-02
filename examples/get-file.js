@@ -8,8 +8,7 @@ enet.createClient(function (err, host) {
 		console.log(err);
 		return;
 	}
-
-	host.enableCompression();
+	//host.enableCompression();
 	console.log("client ready, connecting...");
 	var peer = host.connect(s_addr, 1, 0);
 	peer.on("connect", function () {
@@ -18,6 +17,9 @@ enet.createClient(function (err, host) {
 		stream.pipe(fs.createWriteStream("./got-file.txt"));
 		stream.on("end", function () {
 			console.log("received file.");
+		});
+		stream.on("error", function (e) {
+			console.log("streaming error:", e);
 		});
 	});
 

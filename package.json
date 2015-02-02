@@ -1,18 +1,26 @@
 {
-	"name": "enet",
-	"version": "v0.2.2",
-	"main": "index.js",
-	"description": "The ENet Networking Library cross compiled to javascript",
-	"keywords": ["enet", "protocol", "udp", "network"],
-	"homepage": "https://github.com/mnaamani/enet-npm",
-	"author": {
-		"name": "Mokhtar Naamani",
-		"email": "mokhtar.naamani@gmail.com",
-		"url": "https://github.com/mnaamani"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git@github.com:mnaamani/enet-npm.git"
-	},
-	"license": "MIT"
+  "name": "enet",
+  "version": "v0.2.2",
+  "main": "index.js",
+  "description": "The ENet Networking Library cross compiled to javascript",
+  "keywords": [
+    "enet",
+    "protocol",
+    "udp",
+    "network"
+  ],
+  "homepage": "https://github.com/mnaamani/enet-npm",
+  "author": {
+    "name": "Mokhtar Naamani",
+    "email": "mokhtar.naamani@gmail.com",
+    "url": "https://github.com/mnaamani"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mnaamani/enet-npm.git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "throttle": "^1.0.3"
+  }
 }
