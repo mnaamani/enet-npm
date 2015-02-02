@@ -204,3 +204,6 @@ A duplex stream can also be created with peer.createDuplexStream() method
 
 Ideally streams should be created after a peer is in CONNECTED state. (in the connect event listeners)
 If you try to read from or write to a stream of a disconnected peer it will raise the error event on the stream.
+
+Its important to 'throttle' when writing to a stream to prevent emscripten from growing its memory arrays too much
+to make more memory available when allocating dynamic memory for the packets. (See the serve-file.js example howto throttle)
