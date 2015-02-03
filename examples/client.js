@@ -32,20 +32,35 @@ enet.createClient(function (err, client) {
 				console.log("got message:", packet.data().toString());
 			});
 
-			peer.once("disconnect", function () {
+			peer.on("disconnect", function () {
 				console.log("disconnected.");
 				console.log("shutting down...");
-				client.destroy();
+				setTimeout(function () {
+					client.destroy();
+				});
 			});
 
-			var packet = new enet.Packet(new Buffer("Hello\n"), enet.PACKET_FLAG.RELIABLE);
+			var packet1 = new enet.Packet(new Buffer("Hello\n"), enet.PACKET_FLAG.RELIABLE);
 
-			peer.send(0, packet, function (err) {
-				if (err) console.log("error sending packet:", err);
+			peer.send(0, packet1, function (err) {
+				if (err) {
+					console.log("error sending packet1:", err);
+				} else {
+					console.log("packet1 sent.");
+				}
 			});
 
-			peer.send(0, "test 123...\n");
+			peer.disconnectLater();
 
+			var packet2 = new enet.Packet(new Buffer("test 123\n"), enet.PACKET_FLAG.RELIABLE);
+
+			peer.send(0, packet2, function (err) {
+				if (err) {
+					console.log("error sending packet2:", err);
+				} else {
+					console.log("packet2 sent.");
+				}
+			});
 		});
 	}
 });

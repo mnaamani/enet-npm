@@ -168,6 +168,7 @@ int jsapi_event_get_channelID(ENetEvent *event){
 ENetPacket* jsapi_event_get_packet(ENetEvent* event){
   return event->packet;
 }
+
 void* jsapi_event_get_data(ENetEvent* event){
   return event->data;
 }
@@ -215,6 +216,7 @@ ENetSocket jsapi_host_get_socket(ENetHost* host){
 ENetAddress* jsapi_peer_get_address(ENetPeer* peer){
   return &peer->address;
 }
+
 unsigned char* jsapi_peer_get_data(ENetPeer* peer){
   return peer -> data;
 }
@@ -230,4 +232,8 @@ enet_uint32   jsapi_peer_get_incomingDataTotal(ENetPeer* peer){
 }
 enet_uint32   jsapi_peer_get_outgoingDataTotal(ENetPeer* peer){
 	return peer->outgoingDataTotal;
+}
+
+ENetPacketFlag jsapi_packet_flags(ENetPacket *packet){
+	return packet -> flags;
 }

@@ -22,7 +22,7 @@ enet.createServer({
 			peer.createWriteStream(peer, 0).write("hello I'm the server!");
 			peer.createReadStream(0).pipe(process.stdout);
 			setTimeout(function () {
-				peer.disconnect();
+				peer.disconnectLater();
 			}, 2000);
 
 			peer.on("disconnect", function () {

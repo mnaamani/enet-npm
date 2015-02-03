@@ -24,6 +24,7 @@ EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
 	'_jsapi_packet_set_free_callback', \
 	'_jsapi_packet_get_data', \
 	'_jsapi_packet_get_dataLength', \
+	'_jsapi_packet_flags', \
 	'_jsapi_event_new', \
 	'_jsapi_event_free', \
 	'_jsapi_event_get_type', \
