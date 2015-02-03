@@ -43,7 +43,8 @@ EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
 	'_jsapi_peer_get_address', \
 	'_jsapi_peer_get_state', \
 	'_jsapi_peer_get_incomingDataTotal', \
-	'_jsapi_peer_get_outgoingDataTotal' ]"
+	'_jsapi_peer_get_outgoingDataTotal', \
+	'_jsapi_peer_get_reliableDataInTransit' ]"
 
 module:
 	$(EMCC) src/jsapi.c $(ENET_SOURCE)/*.c -I$(ENET_SOURCE)/include \

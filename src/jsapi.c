@@ -5,8 +5,6 @@
 #include <emscripten/emscripten.h>
 #include <sys/socket.h>
 
-#define MAXTOKENS_PER_TELEX 32
-
 void jsapi_init(int (ENET_CALLBACK * packet_filter) (ENetHost* host)){
   if(packet_filter){
 	ENetCallbacks callbacks = { NULL, NULL, NULL, packet_filter };
@@ -15,6 +13,7 @@ void jsapi_init(int (ENET_CALLBACK * packet_filter) (ENetHost* host)){
   }
   enet_initialize();
 }
+
 ENetHost *
 jsapi_enet_host_from_socket (ENetSocket sock, const ENetAddress * address, size_t peerCount, size_t channelLimit, enet_uint32 incomingBandwidth, enet_uint32 outgoingBandwidth)
 {
@@ -153,25 +152,31 @@ ENetPeer* jsapi_enet_host_connect(ENetHost* host, unsigned int destinationHost, 
 void * jsapi_event_new(){
 	return malloc(sizeof(ENetEvent));
 }
+
 void jsapi_event_free(ENetEvent *event){
 	free(event);
 }
+
 ENetEventType jsapi_event_get_type(ENetEvent* event){
   return event->type;
 }
+
 ENetPeer* jsapi_event_get_peer(ENetEvent* event){
   return event->peer;
 }
+
 int jsapi_event_get_channelID(ENetEvent *event){
   return event->channelID;
 }
+
 ENetPacket* jsapi_event_get_packet(ENetEvent* event){
   return event->packet;
 }
 
-void* jsapi_event_get_data(ENetEvent* event){
+enet_uint32 jsapi_event_get_data(ENetEvent* event){
   return event->data;
 }
+
 //ENetAddress - helpers
 enet_uint32* jsapi_address_get_host(ENetAddress* address){
   //emscripten can only return signed int using the ccall so
@@ -179,6 +184,7 @@ enet_uint32* jsapi_address_get_host(ENetAddress* address){
   //directly from memory!
  return &address->host;
 }
+
 int jsapi_address_get_port(ENetAddress* address){
   return address->port;
 }
@@ -187,39 +193,49 @@ int jsapi_address_get_port(ENetAddress* address){
 enet_uint8* jsapi_packet_get_data(ENetPacket* packet){
   return packet->data;
 }
+
 int jsapi_packet_get_dataLength(ENetPacket* packet){
   return packet->dataLength;
 }
+
 void jsapi_packet_set_free_callback(ENetPacket *packet, ENetPacketFreeCallback callback){
 	packet->freeCallback = callback;
 }
+
+ENetPacketFlag jsapi_packet_flags(ENetPacket *packet){
+	return packet -> flags;
+}
+
 //ENetHost - helpers
 ENetAddress* jsapi_host_get_receivedAddress(ENetHost *host){
   return &host->receivedAddress;
 }
+
 int jsapi_host_get_peerCount(ENetHost* host){
   return host->peerCount;
 }
+
 int jsapi_host_get_channelLimit(ENetHost *host){
   return host->channelLimit;
 }
+
 unsigned char* jsapi_host_get_receivedData(ENetHost *host){
   return host->receivedData;
 }
+
 int jsapi_host_get_receivedDataLength(ENetHost *host){
   return host->receivedDataLength;
 }
+
 ENetSocket jsapi_host_get_socket(ENetHost* host){
   return host->socket;
 }
+
 //ENetPeer - helpers
 ENetAddress* jsapi_peer_get_address(ENetPeer* peer){
   return &peer->address;
 }
 
-unsigned char* jsapi_peer_get_data(ENetPeer* peer){
-  return peer -> data;
-}
 int jsapi_peer_get_channelCount(ENetPeer* peer){
   return peer->channelCount;
 }
@@ -234,6 +250,6 @@ enet_uint32   jsapi_peer_get_outgoingDataTotal(ENetPeer* peer){
 	return peer->outgoingDataTotal;
 }
 
-ENetPacketFlag jsapi_packet_flags(ENetPacket *packet){
-	return packet -> flags;
+enet_uint32   jsapi_peer_get_reliableDataInTransit(ENetPeer *peer){
+	return peer->reliableDataInTransit;
 }

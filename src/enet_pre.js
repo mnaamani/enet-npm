@@ -48,6 +48,10 @@ this["Module"] = Module = {
 			'number'
 		]);
 
+		Module["jsapi"]["peer_get_reliableDataInTransit"] = cwrap('jsapi_peer_get_reliableDataInTransit',
+			'number', [
+				'number'
+			]);
 		Module["libenet"] = {};
 		Module["libenet"]["host_service"] = cwrap("enet_host_service", 'number', ['number', 'number', 'number']);
 		Module["libenet"]["host_destroy"] = cwrap("enet_host_destroy", '', ['number']);
