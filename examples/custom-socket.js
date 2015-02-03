@@ -8,11 +8,13 @@ var assert = require("assert");
 
 var mysocket = require("dgram").createSocket("udp4");
 mysocket.on("listening", function () {
+	console.log("mysocket listening...");
 	start_server(mysocket);
 });
 mysocket.bind(6666);
 
 function start_server(socket) {
+	console.log("starting server");
 	enet.createServerFromSocket({
 			socket: socket
 		},
@@ -21,6 +23,7 @@ function start_server(socket) {
 				console.log(err);
 				return;
 			}
+			host.enableCompression();
 			console.log("host ready on %s:%s", host.address().address, host.address().port);
 			host.on("connect", function (peer, data) {
 				console.log("peer connected");
