@@ -1,0 +1,3 @@
+run the ./build.sh script 
+to generate the bundle.js in the chrome app folder
+Or you can just unzip the precompiled bundle.zip 

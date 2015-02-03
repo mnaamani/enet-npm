@@ -8,7 +8,7 @@ enet.createClient(function (err, client) {
 		console.log(err);
 		return;
 	}
-
+	client.enableCompression();
 	client.on("destroy", function () {
 		console.log("shutdown!");
 	});
