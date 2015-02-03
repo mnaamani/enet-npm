@@ -43,7 +43,9 @@ enet.createClient(function (err, client) {
 
 			peer.send(0, packet, function (err) {
 				if (err) console.log("error sending packet:", e);
-			}).send(0, "test 123...\n");
+			});
+
+			peer.send(0, "test 123...\n");
 
 		});
 	}
