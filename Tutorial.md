@@ -150,12 +150,23 @@ or
 
 enet.PACKET_FLAG.RELIABLE specifies that the packet must use reliable delivery. A reliable packet is guaranteed to be delivered, and a number of retry attempts will be made until an acknowledgement is received from the peer. If a certain number of retry attempts is reached without any acknowledgement, ENet will assume the peer has disconnected and forcefully reset the connection. If this flag is not specified, the packet is assumed an unreliable packet, and no retry attempts will be made nor acknowledgements generated.
 
-A packet is sent to a peer with the  peer.send() method. peer.send() accepts a channel id over which to send the packet, the packet, and a callback function. Once the packet is sent or an error occurs queuing the packet for delivery the callback will be called.
+A packet is sent to a peer with the  peer.send() method, which accepts a channel id over which to send the packet and the packet.
 
-	peer.send(0 /*channel*/, packet, function(err){
-		//callback called when packet is sent or on failure to que packet
-		//If packet is queued but not sent this callback will not be called.
+
+	var err = peer.send(0 /*channel*/, packet);
+
+err will be true if we attempt to send a packet when peer is not connected, or if an error occurs queuing the packet for delivery.
+
+
+peer.send() can also accept an optional callback function:
+
+	var err = peer.send(0, packet, function(err){
+		//packet destroyed, or send error.
 	});
+
+The callback function will be called immediately with an error if either the peer is not connected, or there was an error queuing the outgoing packet, otherwise packet will be queued for delivery.
+
+Once a packet is queued for delivery it is managed by enet and destroyed when no longer required. The callback is called when enet internally destroys the packet. For reliable packets this occurs when the peer acknowledges receipt of the packet or when the peer is reset/disconnected. For unreliable packets this will happen when then the packet is transmitted.
 
 
 ### Peer events
