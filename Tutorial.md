@@ -103,6 +103,9 @@ for an incoming connection, and `undefined` if connection was initiated from loc
 	});
 
 An enet `packet` was received on channel number `channel`, from `peer`.
+The packet data as a Buffer is retrieved with packet.data()
+the packet will be automatically destroyed when the callback returns,
+so do not pass the packet to an async function, instead pass the Buffer.
 
 **destory** event will be emitted when the host is destroyed.
 
@@ -140,33 +143,50 @@ source is an object with `address` and `port` properties (source of udp packet)
 
 ### Sending a packet to an ENet peer
 
-Packets in ENet are created from a string or Buffer.
+Packets in enet can be constructed from strings or Buffers.
 
 	var packet = new enet.Packet(new Buffer("hello, world"), enet.PACKET_FLAG.RELIABLE);
 
 or
 
-	var packet = new enet.Packet("hello");
+	var packet = new enet.Packet("hello"); //unreliable packet
 
 enet.PACKET_FLAG.RELIABLE specifies that the packet must use reliable delivery. A reliable packet is guaranteed to be delivered, and a number of retry attempts will be made until an acknowledgement is received from the peer. If a certain number of retry attempts is reached without any acknowledgement, ENet will assume the peer has disconnected and forcefully reset the connection. If this flag is not specified, the packet is assumed an unreliable packet, and no retry attempts will be made nor acknowledgements generated.
 
 A packet is sent to a peer with the  peer.send() method, which accepts a channel id over which to send the packet and the packet.
 
-
 	var err = peer.send(0 /*channel*/, packet);
 
-err will be true if we attempt to send a packet when peer is not connected, or if an error occurs queuing the packet for delivery.
+peer.send() will return `true` if we attempt to send a packet when peer is not connected, or if an error occurs queuing the packet for delivery.
 
 
 peer.send() can also accept an optional callback function:
 
 	var err = peer.send(0, packet, function(err){
-		//packet destroyed, or send error.
+		if (err) {
+			console.error("error sending packet!", err);
+		} else {
+			console.log("packet sent successfully.");
+		}
 	});
 
-The callback function will be called immediately with an error if either the peer is not connected, or there was an error queuing the outgoing packet, otherwise packet will be queued for delivery.
+The callback function will be called immediately (synchronously) with an error if either the peer is not connected, or there was an error queuing the outgoing packet, otherwise packet will be queued for delivery.
 
 Once a packet is queued for delivery it is managed by enet and destroyed when no longer required. The callback is called when enet internally destroys the packet. For reliable packets this occurs when the peer acknowledges receipt of the packet or when the peer is reset/disconnected. For unreliable packets this will happen when then the packet is transmitted.
+
+We can also pass in a string or buffer instead of a packet. It will be converted internally into a reliable packet.
+
+sending a string on channel 0
+
+	peer.send(0, "Hello ENet");
+
+send a buffer
+
+	peer.send(0, new Buffer("Hello World"));
+
+serialising an object and sending it as a JSON string
+
+	peer.send(0, JSON.stringify(myObject));
 
 
 ### Peer events

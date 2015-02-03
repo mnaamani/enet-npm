@@ -15,18 +15,19 @@ enet.createServer({
 			console.log(err);
 			return;
 		}
+		host.enableCompression();
 		console.log("host ready on %s:%s", host.address().address, host.address().port);
 
 		host.on("connect", function (peer, data) {
 			console.log("peer connected");
-			peer.createWriteStream(peer, 0).write("hello I'm the server!");
+			peer.createWriteStream(0).write("hello I'm the server!");
 			peer.createReadStream(0).pipe(process.stdout);
 			setTimeout(function () {
 				peer.disconnectLater();
 			}, 2000);
 
 			peer.on("disconnect", function () {
-				console.log("disconnected peer");
+				console.log("peer disconnected");
 			});
 		});
 
