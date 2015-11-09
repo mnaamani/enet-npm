@@ -24,11 +24,3 @@ enet.init = function (func) {
 	jsapi_.init(funcPointer);
 };
 
-process.removeAllListeners("uncaughtException"); //emscripten catches and throws again!
-process.on("uncaughtException", function (e) {
-	//catch uncaught exceptions
-	// node's .bind() on dgram sockets throws an async exception
-	// it will be caught in socket.on("error") in createHost();
-	// but we catch the exception here to prevent app crashing
-	console.error("uncaught exception:", e);
-});
