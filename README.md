@@ -1,4 +1,4 @@
-###
+### Why fork?
 The only difference between this fork and upstream is that this one does not
 hijack 'uncaughtException' handlers your application might have
 
