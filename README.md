@@ -1,3 +1,7 @@
+###
+The only difference between this fork and upstream is that this one does not
+hijack 'uncaughtException' handlers your application might have
+
 ### enet
 emscripten compiled [enet networking library](http://enet.bespin.org/)
 
