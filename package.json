@@ -1,6 +1,6 @@
 {
   "name": "enet",
-  "version": "v0.2.7",
+  "version": "v0.2.8",
   "main": "index.js",
   "description": "The ENet Networking Library cross compiled to javascript",
   "keywords": [
