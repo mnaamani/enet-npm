@@ -1,7 +1,7 @@
 EMCC=`./find-emcc.py`/emcc
 #todo - refactor src/library_inet.js and src/library_node_sockets.js to handle closure compiler before enabling it
 OPTIMISE= -O2 --closure 0 -s ASM_JS=1 --llvm-opts 1 --memory-init-file 0
-ENET_SOURCE=./src/enet-1.3.5
+ENET_SOURCE=./src/enet
 
 EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
 	'_jsapi_init', \
