@@ -921,5 +921,11 @@ mergeInto(LibraryManager.library, {
         ___setErrNo(ERRNO_CODES.EOPNOTSUPP);
         return -1;
     },
+
+    //http://pubs.opengroup.org/onlinepubs/009695399/functions/getsockname.html
+    getsockname__deps: ['__setErrNo', '$ERRNO_CODES', '$NodeSockets'],
+    getsockname: function(fd, addr, len) {
+        return -1;
+    },
 });
 
